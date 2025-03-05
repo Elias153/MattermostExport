@@ -1,5 +1,5 @@
 import streamlit as st
-from database import query_db, query_db_postgres
+from database import query_db_postgres
 from datetime import datetime
 from filefunctions import export_to_csv
 from filefunctions import string_to_filename
@@ -11,7 +11,6 @@ def get_base64(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
     return base64.b64encode(data).decode()
-
 
 def show_background():
     # decode the binary
@@ -27,10 +26,6 @@ def show_background():
     ''' % bin_str
     # render the background
     st.markdown(page_bg_img, unsafe_allow_html=True)
-
-# --------------------------------------------------------------------------------------
-# Rewritten functions via postgres
-# --------------------------------------------------------------------------------------
 
 def export_data_postgres(chan_id, chan_name, earliest_date, latest_date):
     # please note that to_timestamp is not needed for the actual exporting, it only serves testing
