@@ -1,4 +1,3 @@
-import mysql.connector
 from filefunctions import read_database_config
 import streamlit as st
 import psycopg2
@@ -13,7 +12,7 @@ def query_db_postgres(query, params, expectedparams):
 
         connection = psycopg2.connect(**config['database'])
 
-        print("Connected to the database")
+        #print("Connected to the database")
         # Create a cursor object to execute SQL queries
         cursor = connection.cursor()
 
@@ -40,11 +39,11 @@ def query_db_postgres(query, params, expectedparams):
             if connection is not None and connection.closed == 0:
                 cursor.close()
                 connection.close()
-                print("Connection closed")
+                #print("Connection closed")
 
             return rows
 
     except Error as e:
         st.write("Error connecting to the database:", e)
     finally:
-        print("Done")
+        pass

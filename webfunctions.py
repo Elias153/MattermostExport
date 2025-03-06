@@ -1,7 +1,11 @@
+import ast
+import json
+
+import requests
 import streamlit as st
 from database import query_db_postgres
 from datetime import datetime
-from filefunctions import export_to_csv
+from filefunctions import export_to_csv, read_database_config
 from filefunctions import string_to_filename
 import base64
 import pandas as pd
@@ -34,15 +38,20 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date):
     # comparisons between dates using sql assume, that if there's not a specific time specified,
     # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison has to be adjusted a bit, to not
     # accidentally exclude the last day when something was posted in the channel.
-    query = """SELECT to_timestamp((Posts.CreateAt/1000)), UserName, Message FROM Posts INNER JOIN Users
+    query = """SELECT to_timestamp((Posts.CreateAt/1000)), UserName, Message, filenames, fileids FROM Posts INNER JOIN Users
             ON Posts.UserId = Users.Id WHERE ChannelId = %s AND to_timestamp(Posts.CreateAt/1000) >= %s 
             AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' ORDER BY Posts.CreateAt"""
 
+    filenamelist = []
+    fileidlist = []
     # Fetch rows into lists
     posts = []
     for row in query_db_postgres(query,(chan_id,earliest_date,latest_date),True):
         posts.append(row)
+        filenamelist.append(row[3])
+        fileidlist.append(row[4])
 
+    print(filenamelist)
     # Create a download button for the CSV file
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     export_to_csv(posts, current_datetime + "_" + string_to_filename(chan_name) + ".csv")
@@ -59,6 +68,8 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date):
 
     # Display results
     st.table(styled_df)
+
+    get_file_download(filenamelist,fileidlist)
 
 def channel_name_dropdown_postgres():
 
@@ -115,3 +126,44 @@ def timestamps_input(chan_id):
         latestdate = st.date_input(":violet[End Date]", dt_latest)
 
     return earliestdate, latestdate
+
+
+def get_file_download(filenames, file_ids):
+    config = read_database_config('connection.yaml')
+
+    url = config['url']  # Updated hostname
+    auth_token = ""
+    login_url = url + "/api/v4/users/login"
+
+    payload = {
+        "login_id": config['login_id'],
+        "password": config['password']
+    }
+
+    headers = {"content-type": "application/json"}
+    s = requests.Session()
+    r = s.post(login_url, data=json.dumps(payload), headers=headers)
+    auth_token = r.headers.get("Token")
+    hed = {'Authorization': 'Bearer ' + auth_token}
+
+    namingthing = 1
+    for ids in file_ids:
+        if ids == "[]":
+            pass
+        else:
+            #info_url = url + "/api/v4/files/" + ids + '/info'
+            #response = requests.get(info_url, headers=hed)
+            #info = response.json()
+            #filename = info["name"]
+            #print(filename)
+            # Safely evaluate the string to extract the file ID
+            result = ast.literal_eval(ids)[0]
+            file_url = url + "/api/v4/files/" + result
+
+            response = requests.get(file_url, headers=hed)
+            var = "img" + str(namingthing)
+            open(var, 'wb').write(response.content)
+            print("Download Complete with " + result)
+            namingthing += 1
+
+    return 0
