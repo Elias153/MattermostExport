@@ -47,6 +47,14 @@ connection:
   login_id: "<your_username>"
   password: "<your_password>"
 ```
+## Disclaimer
+
+Upon installing the requirements, you might come across the error : "**WARNING: Failed to activate VS environment: Could not parse vswhere.exe output**"
+
+The error you're encountering is likely due to a missing or improperly configured C++ build tools on your system, which are required for building some Python packages from source.
+
+### Solution:
+Download Microsoft Build Tools for Visual Studio from the official Microsoft website. During installation, make sure to select the "C++ build tools" workload.
 
 | ![screenshot1](https://github.com/datadelft/MM.C.P.E./assets/56151011/7de1226e-784b-47b7-994c-d740fcf82db5) | ![screenshot2](https://github.com/datadelft/MM.C.P.E./assets/56151011/14cbf540-7c1d-4ceb-bd00-f0b73337a646) | ![screenshot3](https://github.com/datadelft/MM.C.P.E./assets/56151011/f5df9c61-af8a-4cbb-aab9-ab775e93fb76) |
 
