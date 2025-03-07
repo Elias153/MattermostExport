@@ -37,11 +37,11 @@ def show_background():
     st.markdown(page_bg_img, unsafe_allow_html=True)
 
 def export_data_postgres(chan_id, chan_name, earliest_date, latest_date):
-    # please note that to_timestamp is not needed for the actual exporting, it only serves testing
-    # purposes.
+    # please note that to_timestamp in the select criteria can be omitted, as it only serves the purpose
+    # on making the export more readable to a human.
 
     # comparisons between dates using sql assume, that if there's not a specific time specified,
-    # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison has to be adjusted a bit, to not
+    # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison (see last line) has to be adjusted a bit, to not
     # accidentally exclude the last day when something was posted in the channel.
     query = """SELECT to_timestamp((Posts.CreateAt/1000)), UserName, Message, filenames, fileids FROM Posts INNER JOIN Users
             ON Posts.UserId = Users.Id WHERE ChannelId = %s AND to_timestamp(Posts.CreateAt/1000) >= %s 

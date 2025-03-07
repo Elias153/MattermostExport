@@ -3,6 +3,8 @@ import streamlit as st
 import psycopg2
 from psycopg2 import Error
 
+# pass parameters the query should be executed with, as well as a boolean if there are any parameters
+# expected at all.
 def query_db_postgres(query, params, expectedparams):
     # Establish a connection to the database
 
@@ -12,20 +14,16 @@ def query_db_postgres(query, params, expectedparams):
 
         connection = psycopg2.connect(**config['database'])
 
-        #print("Connected to the database")
         # Create a cursor object to execute SQL queries
         cursor = connection.cursor()
-
         if connection.closed == 0 and query != "":
-
+            # Execute the query with passed parameters if there are any
             if expectedparams :
-                # Execute the query with passed parameters
-
                 # if tuple, we can assume the arguments are already passed with correct syntax
                 if isinstance(params, tuple):
                     cursor.execute(query, params)
                 else:
-                    # if not t
+                    # manually build 1-tuple before passing parameter
                     cursor.execute(query, (params,))
 
             else :
@@ -39,7 +37,6 @@ def query_db_postgres(query, params, expectedparams):
             if connection is not None and connection.closed == 0:
                 cursor.close()
                 connection.close()
-                #print("Connection closed")
 
             return rows
 
