@@ -1,14 +1,19 @@
 import ast
 import json
+import os
 
 import requests
 import streamlit as st
+
+import filefunctions
 from database import query_db_postgres
 from datetime import datetime
 from filefunctions import export_to_csv, read_database_config
-from filefunctions import string_to_filename
+from filefunctions import string_to_filename, determine_file_extension
 import base64
 import pandas as pd
+import magic
+import mimetypes
 
 def get_base64(bin_file):
     # Decode binary files like images
@@ -51,7 +56,6 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date):
         filenamelist.append(row[3])
         fileidlist.append(row[4])
 
-    print(filenamelist)
     # Create a download button for the CSV file
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     export_to_csv(posts, current_datetime + "_" + string_to_filename(chan_name) + ".csv")
@@ -69,7 +73,7 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date):
     # Display results
     st.table(styled_df)
 
-    get_file_download(filenamelist,fileidlist)
+    export_attachments(fileidlist)
 
 def channel_name_dropdown_postgres():
 
@@ -116,22 +120,20 @@ def timestamps_input(chan_id):
     dt_latest = datetime.strptime(latestDate, "%Y-%m-%d")
     dt_earliest = datetime.strptime(earliestDate, "%Y-%m-%d")
 
-    # Create two columns
+    # formatting for streamlit
     col1, col2 = st.columns(2)
-
     with col1:
         earliestdate = st.date_input(":violet[Start Date]", dt_earliest)
-
     with col2:
         latestdate = st.date_input(":violet[End Date]", dt_latest)
 
     return earliestdate, latestdate
 
 
-def get_file_download(filenames, file_ids):
+def export_attachments(file_ids):
+    # setup api-connection
     config = read_database_config('connection.yaml')
-
-    url = config['url']  # Updated hostname
+    url = config['url']  # hostname
     auth_token = ""
     login_url = url + "/api/v4/users/login"
 
@@ -146,9 +148,10 @@ def get_file_download(filenames, file_ids):
     auth_token = r.headers.get("Token")
     hed = {'Authorization': 'Bearer ' + auth_token}
 
-    namingthing = 1
+    # retrieve and export files via mattermost api
     for ids in file_ids:
         if ids == "[]":
+            # if there is no id for a given message, nothing needs to be done
             pass
         else:
             #info_url = url + "/api/v4/files/" + ids + '/info'
@@ -156,14 +159,19 @@ def get_file_download(filenames, file_ids):
             #info = response.json()
             #filename = info["name"]
             #print(filename)
-            # Safely evaluate the string to extract the file ID
-            result = ast.literal_eval(ids)[0]
-            file_url = url + "/api/v4/files/" + result
 
+            # Safely evaluate the string to extract the file ID
+            # The IDs are stored in following format: ["myid"], we only need the literal myid
+            formatted_id = ast.literal_eval(ids)[0]
+            file_url = url + "/api/v4/files/" + formatted_id
+
+            # retrieve the file via api
             response = requests.get(file_url, headers=hed)
-            var = "img" + str(namingthing)
-            open(var, 'wb').write(response.content)
-            print("Download Complete with " + result)
-            namingthing += 1
+            open(formatted_id, 'wb').write(response.content)
+
+            # determine missing file_extension for exported attachments
+            extension = determine_file_extension(formatted_id)
+            os.rename(formatted_id,formatted_id+extension)
+            print("Download Complete with " + formatted_id+extension)
 
     return 0

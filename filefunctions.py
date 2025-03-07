@@ -1,8 +1,9 @@
 import csv
+import mimetypes
 from io import StringIO
 import yaml
 import streamlit as st
-
+import magic
 
 def read_database_config(file_path):
     with open(file_path, 'r') as file:
@@ -33,3 +34,10 @@ def string_to_filename(s):
     # Remove leading/trailing spaces and double underscores
     filename = filename.strip().replace('__', '_')
     return filename
+
+def determine_file_extension(file_name):
+    mime = magic.Magic(mime=True)
+    mime = mime.from_file(file_name)
+    extension = mimetypes.guess_extension(mime)
+
+    return extension
