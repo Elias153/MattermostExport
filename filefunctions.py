@@ -2,23 +2,54 @@ import base64
 import csv
 import io
 import mimetypes
+import os
 import zipfile
 from io import StringIO
 import yaml
 import streamlit as st
 import magic
-import streamlit.components.v1 as components
 
-def create_zip_archive(file_tuples):
+def create_zip_archive(file_tuples,attachment_id_lists):
+    from channelexport import export_attachments
     """
-    Given a list of tuples (file_name, file_data), create a ZIP archive in memory
-    and return its bytes.
+    Given a list of tuples (file_name, file_data), create a ZIP archive in memory.
+    For each tuple, a folder is created based on the file name (without extension),
+    and within that folder an empty "attachments" folder is created.
+    The CSV file is written in the parent folder, leaving the attachments folder empty.
+
+    a file_tuple in file_tuples at e.g. index 1 also corresponds to the list of attachment_ids at index 1 in attachment_id_lists
     """
+    index = 0
+    attachments = []
     mem_zip = io.BytesIO()
     with zipfile.ZipFile(mem_zip, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         for file_name, file_data in file_tuples:
-            # file_data should be bytes (e.g., CSV data encoded in utf-8)
-            zf.writestr(file_name, file_data)
+            # Create a folder based on the file's base name (e.g., "report.csv" -> "report")
+            folder_name, _ = os.path.splitext(file_name)
+            folder_path = folder_name + "/"  # e.g., "report/"
+            attachments_path = folder_path + "attachments/"  # e.g., "report/attachments/"
+
+            # Add the parent folder and the empty attachments folder to the ZIP
+            zf.writestr(folder_path, "")
+            zf.writestr(attachments_path, "")
+
+            # Write the CSV file in the parent folder (outside of attachments)
+            file_path = folder_path + file_name  # e.g., "report/report.csv"
+            zf.writestr(file_path, file_data)
+
+            file_attachment_ids = attachment_id_lists[index]
+            attachments = export_attachments(file_attachment_ids,True)
+
+            # "None" is the return value if either the attachment export is not part of a team-export
+            # OR (here) there was not an attachment found in the current channel.
+            if attachments is not None:
+                for att_file_name, att_file_data in attachments:
+                    #print("This worked.")
+                    att_file_path = attachments_path + att_file_name
+                    zf.writestr(att_file_path, att_file_data)
+                    print("Saved Attachment: " + att_file_path)
+            index+=1
+
     mem_zip.seek(0)
     return mem_zip.read()
 
@@ -63,16 +94,7 @@ def string_to_filename(s):
     filename = filename.strip().replace('__', '_')
     return filename
 
-def determine_file_extension(file_name):
+def determine_file_extension(file_data):
     mime = magic.Magic(mime=True)
-    mime = mime.from_file(file_name)
-    extension = mimetypes.guess_extension(mime)
-
-    return extension
-
-def generate_zip(file_name, data):
-    """
-    Returns a tuple (file_name, base64_data, mime) for later use.
-    """
-    #b64 = base64.b64encode(data).decode()
-    return file_name, data
+    mime_type = mime.from_buffer(file_data)
+    return mimetypes.guess_extension(mime_type)

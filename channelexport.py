@@ -3,12 +3,13 @@ import json
 import os
 from datetime import datetime
 
+import filetype
 import pandas as pd
 import requests
 import streamlit as st
 from database import query_db_postgres
 from filefunctions import export_to_csv, string_to_filename, read_database_config, determine_file_extension, \
-    export_to_csv_clean, generate_zip
+    export_to_csv_clean
 
 
 def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_name):
@@ -47,15 +48,18 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_na
         # Display results
         st.table(styled_df)
 
-        export_attachments(fileidlist)
+        export_attachments(fileidlist,False)
     else:
         download_data = export_to_csv_clean(posts)
 
-        downloadstring = generate_zip(string_to_filename(teams_name) + "_" + string_to_filename(chan_name) + ".csv", download_data)
+        # note that downloadstring is now a tuple !
+        downloadstring = (string_to_filename(chan_name) + ".csv", download_data)
 
-        return downloadstring
+        # fileid-list also exported instead of directly calling "export_attachments" as we need
+        # to store the attachments in the correct location of the zip export
+        return downloadstring, fileidlist
 
-def export_attachments(file_ids):
+def export_attachments(file_ids, teams_export):
     # setup api-connection
     config = read_database_config('connection.yaml')
     connection = config['connection']
@@ -74,6 +78,7 @@ def export_attachments(file_ids):
     auth_token = r.headers.get("Token")
     hed = {'Authorization': 'Bearer ' + auth_token}
 
+    output = []
     # retrieve and export files via mattermost api
     for ids in file_ids:
         if ids == "[]":
@@ -87,9 +92,22 @@ def export_attachments(file_ids):
 
             # retrieve the file via api
             response = requests.get(file_url, headers=hed)
-            open(formatted_id, 'wb').write(response.content)
+            file_data = response.content
+            # Determine the extension from the file content
+            kind = filetype.guess(file_data)
+            if kind:
+                final_filename = f"{formatted_id}.{kind.extension}"
+            else:
+                final_filename = f"{formatted_id} + {determine_file_extension(file_data)}"
 
-            # determine missing file_extension for exported attachments
-            extension = determine_file_extension(formatted_id)
-            os.rename(formatted_id,formatted_id+extension)
-            print("Download Complete with " + formatted_id+extension)
+            if not teams_export:
+                open(final_filename, 'wb').write(file_data)
+                print("Download Complete with " + final_filename)
+            else:
+                output.append((final_filename,file_data))
+
+    if teams_export:
+        return output
+
+    # signal that there are no attachments found through this return value
+    return None

@@ -1,5 +1,6 @@
 import streamlit as st
 import webfunctions as web
+from channelexport import export_data_postgres
 from database import query_db_postgres
 from teamexport import export_data_postgres_team
 from webfunctions import teams_name_dropdown_postgres
@@ -26,4 +27,4 @@ if __name__ == '__main__':
         st.markdown(f""":orange[Button clicked, channel choice was] <span style='color: yellow;'>{channel_name}</span>
           :orange[with id] <span style='color: yellow;'> {channel_id}</span>""", unsafe_allow_html=True)
         # export the data with previously given arguments
-        web.export_data_postgres(channel_id, channel_name, earliest_date, latest_date, None,None)
+        export_data_postgres(channel_id, channel_name, earliest_date, latest_date, None)

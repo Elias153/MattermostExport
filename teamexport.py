@@ -6,6 +6,7 @@ import streamlit as st
 
 def export_data_postgres_team(team_id,team_name):
     download_links = []
+    attachment_id_lists = []
     # retrieve the relevant channels from the selected team
     channel_ids, channel_names = get_channels_from_team(
         team_id
@@ -18,15 +19,18 @@ def export_data_postgres_team(team_id,team_name):
         latest_date, earliest_date = select_default_timestamps(chan_id)
 
         # determine the download link for the current channel
-        download_string = export_data_postgres(chan_id, chan_name, earliest_date, latest_date,team_name)
+        # note that download_string is a tuple (filename,filedata)
+        download_string, attachment_list = export_data_postgres(chan_id, chan_name, earliest_date, latest_date,team_name)
         download_links.append(download_string)
+        # a list of lists of file_ids of the attachments
+        attachment_id_lists.append(attachment_list)
 
         # Update progress every 10 channels or on the last iteration
-        if (i + 1) % 10 == 0 or (i + 1) == total_channels:
-            progress = ((i + 1) / total_channels) * 100
-            print(f"Progress: {progress:.1f}% completed")
+        #if (i + 1) % 10 == 0 or (i + 1) == total_channels:
+        #    progress = ((i + 1) / total_channels) * 100
+        #    print(f"Progress: {progress:.1f}% completed")
 
-    zip_bytes = create_zip_archive(download_links)
+    zip_bytes = create_zip_archive(download_links, attachment_id_lists)
     st.download_button(
         label="Download ZIP",
         data=zip_bytes,
