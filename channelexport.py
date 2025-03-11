@@ -23,12 +23,14 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_na
             ON Posts.UserId = Users.Id WHERE ChannelId = %s AND to_timestamp(Posts.CreateAt/1000) >= %s 
             AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' ORDER BY Posts.CreateAt"""
 
+    # TODO : ADD COLUMN NAMES; INCLUDE CHANNEL_MEMBERS AS A SPECIAL COLUMN. EACH ROW SHOULD THEN CONTAIN
+    # TODO : THE NAME OF THE SPECIFIC USER
     fileidlist = []
     # Fetch rows into lists
     posts = []
     for row in query_db_postgres(query,(chan_id,earliest_date,latest_date),True):
         posts.append(row)
-        fileidlist.append(row[3])
+        #fileidlist.append(row[3])
 
     # Create a download button for the CSV file
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -96,9 +98,11 @@ def export_attachments(file_ids, teams_export):
             # Determine the extension from the file content
             kind = filetype.guess(file_data)
             if kind:
+                # the extension could be guessed using the filetype lib, which is more precise
                 final_filename = f"{formatted_id}.{kind.extension}"
             else:
-                final_filename = f"{formatted_id} + {determine_file_extension(file_data)}"
+                # if the extension could not be detected, we use the mime-type library
+                final_filename = f"{formatted_id}{determine_file_extension(file_data)}"
 
             if not teams_export:
                 open(final_filename, 'wb').write(file_data)
