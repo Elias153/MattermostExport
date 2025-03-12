@@ -1,6 +1,7 @@
 # MM.C.P.E.
 _The Streamlit Mattermost Channel Post Exporter_ 
-
+- credits to https://github.com/datadelft/MM.C.P.E./tree/master (base of the script)
+- 
 ## Introduction
 
 The MM.C.P.E. is a little program that connects to your mattermost database 
