@@ -11,6 +11,18 @@ from database import query_db_postgres
 from filefunctions import export_to_csv, string_to_filename, read_database_config, determine_file_extension, \
     export_to_csv_clean
 
+def export_channel_members(chan_id):
+    query = """SELECT Users.username,Users.id FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
+    AND ChannelMemberHistory.userid = ChannelMembers.userid INNER JOIN Users ON ChannelMemberHistory.userid = Users.id AND 
+    ChannelMembers.userid = Users.id WHERE ChannelMembers.channelid = %s AND ChannelMemberHistory.leavetime IS NULL"""
+
+    users = []
+    for row in query_db_postgres(query,chan_id,True):
+        users.append(row)
+
+    members_data = export_to_csv_clean(users)
+
+    return members_data
 
 def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_name):
     # please note that to_timestamp in the select criteria can be omitted, as it only serves the purpose
@@ -30,13 +42,24 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_na
     posts = []
     for row in query_db_postgres(query,(chan_id,earliest_date,latest_date),True):
         posts.append(row)
-        #fileidlist.append(row[3])
+        fileidlist.append(row[3])
 
     # Create a download button for the CSV file
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     if teams_name is None:
-        export_to_csv(posts, current_datetime + "_" + string_to_filename(chan_name) + ".csv")
+        file_export_data = export_to_csv_clean(posts)
+        with open(current_datetime + "_" + string_to_filename(chan_name) + ".csv", 'wb') as file:
+            file.write(file_export_data)
+
+        member_data = export_channel_members(chan_id)
+        with open(f'{current_datetime}_{string_to_filename(chan_name)}_members.csv', 'wb') as file:
+            file.write(member_data)
+        #export_to_csv(member_data, current_datetime + "_" + string_to_filename(chan_name) + "_members.csv")
+
+        st.success(
+            "Download Complete with " + current_datetime + "_" + string_to_filename(chan_name) + ".csv"
+        )
         # Convert the list to a DataFrame
         df = pd.DataFrame(posts)
 

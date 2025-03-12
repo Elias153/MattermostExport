@@ -4,12 +4,13 @@ import io
 import mimetypes
 import os
 import zipfile
+from datetime import datetime
 from io import StringIO
 import yaml
 import streamlit as st
 import magic
 
-def create_zip_archive(file_tuples,attachment_id_lists):
+def create_zip_archive(file_tuples,attachment_id_lists, member_lists):
     from channelexport import export_attachments
     """
     Given a list of tuples (file_name, file_data), create a ZIP archive in memory.
@@ -17,7 +18,8 @@ def create_zip_archive(file_tuples,attachment_id_lists):
     and within that folder an empty "attachments" folder is created.
     The CSV file is written in the parent folder, leaving the attachments folder empty.
 
-    a file_tuple in file_tuples at e.g. index 1 also corresponds to the list of attachment_ids at index 1 in attachment_id_lists
+    a file_tuple in file_tuples at e.g. index 1 also corresponds to the list of attachment_ids at index 1 in attachment_id_lists,
+    analog to the index in member_lists
     """
     index = 0
     attachments = []
@@ -37,6 +39,11 @@ def create_zip_archive(file_tuples,attachment_id_lists):
             file_path = folder_path + file_name  # e.g., "report/report.csv"
             zf.writestr(file_path, file_data)
 
+            # channel-member export
+            file_member_data = member_lists[index]
+            zf.writestr(folder_path+"members.csv",file_member_data)
+
+            # attachment export
             file_attachment_ids = attachment_id_lists[index]
             attachments = export_attachments(file_attachment_ids,True)
 
@@ -68,12 +75,16 @@ def export_to_csv(data, file_name):
     # Prepend BOM for UTF-8
     bom = '\ufeff'
     csv_data_str = (bom + csv_data.getvalue()).encode('utf-8').strip()
-    st.download_button(
-        label="Download CSV",
-        data=csv_data_str,
-        file_name=file_name,
-        mime="text/csv"
-    )
+
+    with open(f'{file_name}', 'wb') as file:
+        file.write(csv_data_str)
+
+    #st.download_button(
+    #    label="Download CSV",
+    #    data=csv_data_str,
+    #    file_name=file_name,
+    #    mime="text/csv"
+    #)
 
 def export_to_csv_clean(data):
     # Create a CSV string from the data

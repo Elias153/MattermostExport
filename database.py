@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2 import Error
 
 # pass parameters the query should be executed with, as well as a boolean if there are any parameters
-# expected at all.
+# expected at all. You can also pass a single parameter not formatted as a tuple, the function handles that.
 def query_db_postgres(query, params, expectedparams):
     # Establish a connection to the database
 
