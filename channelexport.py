@@ -32,7 +32,7 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_na
     # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison (see last line) has to be adjusted a bit, to not
     # accidentally exclude the last day when something was posted in the channel.
     query = """SELECT Posts.CreateAt/1000, UserName, Message, fileids FROM Posts INNER JOIN Users
-            ON Posts.UserId = Users.Id WHERE ChannelId = %s AND to_timestamp(Posts.CreateAt/1000) >= %s 
+            ON Posts.UserId = Users.Id WHERE Posts.editat = 0 AND ChannelId = %s AND to_timestamp(Posts.CreateAt/1000) >= %s 
             AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' ORDER BY Posts.CreateAt"""
 
     # TODO : ADD COLUMN NAMES; INCLUDE CHANNEL_MEMBERS AS A SPECIAL COLUMN. EACH ROW SHOULD THEN CONTAIN
