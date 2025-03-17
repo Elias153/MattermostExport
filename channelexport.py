@@ -10,6 +10,7 @@ import streamlit as st
 from database import query_db_postgres
 from filefunctions import export_to_csv, string_to_filename, read_database_config, determine_file_extension, \
     export_to_csv_clean
+from webfunctions import select_default_timestamps
 
 def export_channel_members(chan_id):
     query = """SELECT Users.username,Users.id FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
@@ -17,12 +18,20 @@ def export_channel_members(chan_id):
     ChannelMembers.userid = Users.id WHERE ChannelMembers.channelid = %s AND ChannelMemberHistory.leavetime IS NULL"""
 
     users = []
+    headers = ["Username", "User ID"]
+    users.append(headers)
+
     for row in query_db_postgres(query,chan_id,True):
         users.append(row)
 
+    query="""SELECT publicchannels.displayname FROM publicchannels WHERE publicchannels.id = %s"""
+    isconstrained = True
+    for row in query_db_postgres(query,chan_id,True):
+        isconstrained = False
+
     members_data = export_to_csv_clean(users)
 
-    return members_data
+    return members_data, isconstrained
 
 def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_name):
     # please note that to_timestamp in the select criteria can be omitted, as it only serves the purpose
@@ -31,15 +40,17 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_na
     # comparisons between dates using sql assume, that if there's not a specific time specified,
     # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison (see last line) has to be adjusted a bit, to not
     # accidentally exclude the last day when something was posted in the channel.
-    query = """SELECT Posts.CreateAt/1000, UserName, Message, fileids FROM Posts INNER JOIN Users
+    query = """SELECT Posts.CreateAt/1000, UserName, Message, fileids, Posts.type FROM Posts INNER JOIN Users
             ON Posts.UserId = Users.Id WHERE Posts.editat = 0 AND ChannelId = %s AND to_timestamp(Posts.CreateAt/1000) >= %s 
             AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' ORDER BY Posts.CreateAt"""
 
-    # TODO : ADD COLUMN NAMES; INCLUDE CHANNEL_MEMBERS AS A SPECIAL COLUMN. EACH ROW SHOULD THEN CONTAIN
-    # TODO : THE NAME OF THE SPECIFIC USER
     fileidlist = []
     # Fetch rows into lists
     posts = []
+
+    headers = ["Date", "User", "Message", "Attachments", "Type"]
+    posts.append(headers)
+
     for row in query_db_postgres(query,(chan_id,earliest_date,latest_date),True):
         posts.append(row)
         fileidlist.append(row[3])
@@ -49,11 +60,16 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_na
 
     if teams_name is None:
         file_export_data = export_to_csv_clean(posts)
-        with open(current_datetime + "_" + string_to_filename(chan_name) + ".csv", 'wb') as file:
+        with open("channel_export/"+current_datetime + "_" + string_to_filename(chan_name) + ".csv", 'wb') as file:
             file.write(file_export_data)
 
-        member_data = export_channel_members(chan_id)
-        with open(f'{current_datetime}_{string_to_filename(chan_name)}_members.csv', 'wb') as file:
+        member_data,isconstrained = export_channel_members(chan_id)
+
+        member_file_name = f'channel_export/{current_datetime}_{string_to_filename(chan_name)}_members_public.csv'
+        if isconstrained:
+            member_file_name = f'channel_export/{current_datetime}_{string_to_filename(chan_name)}_members_private.csv'
+
+        with open(member_file_name, 'wb') as file:
             file.write(member_data)
         #export_to_csv(member_data, current_datetime + "_" + string_to_filename(chan_name) + "_members.csv")
 
