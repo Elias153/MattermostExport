@@ -7,7 +7,7 @@ _The Streamlit Mattermost Channel Post Exporter_
 The MM.C.P.E. is a little program that connects to your mattermost database 
 directly. It reads the channels and presents them as a dropdown box. Selecting 
 a channel allows you to export all messages in that channel together with the 
-name of the poster. Exports can also be downloaded in CSV format.
+name of the poster. Exports will also be downloaded in CSV format.
 
 
 ## Installation
