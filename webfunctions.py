@@ -91,6 +91,11 @@ def select_default_timestamps(chan_id):
     for row in query_db_postgres(query, chan_id, True):
         latestDate, earliestDate = row  # row returned is tuple ("latest_date", "earliest_date"), we split it here
 
+    if latestDate is None:
+        latestDate = datetime.now().strftime("%Y-%m-%d")
+
+    if earliestDate is None:
+        earliestDate = "1970-01-01"
     # needed to convert the previous output to datetime objects for further processing
     dt_latest = datetime.strptime(latestDate, "%Y-%m-%d")
     dt_earliest = datetime.strptime(earliestDate, "%Y-%m-%d")

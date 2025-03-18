@@ -1,6 +1,7 @@
 import ast
 import json
 import os
+import re
 from datetime import datetime
 
 import filetype
@@ -10,7 +11,6 @@ import streamlit as st
 from database import query_db_postgres
 from filefunctions import export_to_csv, string_to_filename, read_database_config, determine_file_extension, \
     export_to_csv_clean
-from webfunctions import select_default_timestamps
 
 def export_channel_members(chan_id):
     query = """SELECT Users.username,Users.id FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
@@ -33,7 +33,7 @@ def export_channel_members(chan_id):
 
     return members_data, isconstrained
 
-def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_name):
+def export_data_postgres(chan_id, chan_name, earliest_date, latest_date):
     # please note that to_timestamp in the select criteria can be omitted, as it only serves the purpose
     # on making the export more readable to a human.
 
@@ -42,7 +42,7 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date,teams_na
     # accidentally exclude the last day when something was posted in the channel.
     query = """SELECT Posts.CreateAt/1000, UserName, Message, fileids, Posts.type FROM Posts INNER JOIN Users
             ON Posts.UserId = Users.Id WHERE Posts.editat = 0 AND ChannelId = %s AND to_timestamp(Posts.CreateAt/1000) >= %s 
-            AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' ORDER BY Posts.CreateAt"""
+            AND editat = 0 AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' ORDER BY Posts.CreateAt"""
 
     fileidlist = []
     # Fetch rows into lists
@@ -128,7 +128,17 @@ def export_attachments(file_ids, teams_export):
         else:
             # Safely evaluate the string to extract the file ID
             # The IDs are stored in following format: ["myid"], we only need the literal myid
-            formatted_id = ast.literal_eval(ids)[0]
+            try:
+                formatted_id = ast.literal_eval(ids)[0]
+            except ValueError:
+                # Fallback: extract the content between square brackets (e.g. from [myid])
+                match = re.search(r'\[(.*?)\]', ids)
+                if match:
+                    formatted_id = match.group(1).strip().strip('"').strip("'")
+                else:
+                    # Handle the error or skip this entry
+                    continue
+
             file_url = url + "/api/v4/files/" + formatted_id
 
             # retrieve the file via api
