@@ -37,11 +37,24 @@ def create_zip_archive(file_tuples,attachment_id_lists, member_lists):
 
             # Write the CSV file in the parent folder (outside of attachments)
             file_path = folder_path + file_name  # e.g., "report/report.csv"
-            zf.writestr(file_path, file_data)
+            try:
+                zf.writestr(file_path, file_data)
+                #file_data = file_data.encode('utf-8')
+            except TypeError:
+                print(str(file_data) + " is a tuple.. ?")
+                exit(1)
+            #zf.writestr(file_path, file_data)
 
             # channel-member export
-            file_member_data = member_lists[index]
-            zf.writestr(folder_path+"members.csv",file_member_data)
+            file_member_data,is_constrained = member_lists[index]
+            try:
+                member_file_name = f'members.csv'
+                if is_constrained:
+                    member_file_name = f'members_private.csv'
+                zf.writestr(folder_path+f"{member_file_name}",file_member_data)
+            except TypeError:
+                print(str(file_member_data) + " is a tuple.. ?")
+                exit(1)
 
             # attachment export
             file_attachment_ids = attachment_id_lists[index]
