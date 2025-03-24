@@ -33,7 +33,7 @@ if __name__ == '__main__':
         st.markdown(f""":orange[Button clicked, channel choice was] <span style='color: yellow;'>{channel_name}</span>
           :orange[with id] <span style='color: yellow;'> {channel_id}</span>""", unsafe_allow_html=True)
         # export the data with previously given arguments
-        export_data_postgres(channel_id, channel_name, earliest_date, latest_date, None)
+        export_data_postgres(channel_id, channel_name, earliest_date, latest_date)
 
     if st.button('Export DMs/Groups'):
         channel_names, channel_ids = get_channels_from_dmgroup()

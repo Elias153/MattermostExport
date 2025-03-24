@@ -33,7 +33,7 @@ def export_channel_members(chan_id):
 
     return members_data, isconstrained
 
-def export_data_postgres(chan_id, chan_name, earliest_date, latest_date):
+def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_name = None):
     # please note that to_timestamp in the select criteria can be omitted, as it only serves the purpose
     # on making the export more readable to a human.
 
