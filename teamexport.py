@@ -23,7 +23,7 @@ def export_data_postgres_team(team_id,team_name):
 
         # determine the download link for the current channel
         # note that download_string is a tuple (filename,filedata)
-        download_string, attachment_list = export_data_postgres(chan_id, chan_name, earliest_date, latest_date,team_name)
+        download_string, attachment_list = export_data_postgres(chan_id, chan_name, earliest_date, latest_date,True)
 
         #metadata_csv = export_channel_members(chan_id)
         metadata_json = export_metadata_json(chan_id)

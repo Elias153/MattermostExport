@@ -1,6 +1,5 @@
 import ast
 import json
-import os
 import re
 from datetime import datetime
 
@@ -54,6 +53,7 @@ def export_metadata_json(chan_id):
     for row in query_db_postgres(query,chan_id,True):
         isconstrained = False
 
+    current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     # Create the structured dictionary
     metadata_dict = {
         "members": {
@@ -61,7 +61,9 @@ def export_metadata_json(chan_id):
             "userids": userids,
             "schemeadmins": schemeadmins,
         },
-        "is_private": isconstrained
+        "is_private": isconstrained,
+        "channel_id": chan_id,
+        "export_date": current_datetime
 
     }
 
@@ -69,7 +71,7 @@ def export_metadata_json(chan_id):
 
     return metadata
 
-def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_name = None):
+def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_export = False):
     # please note that to_timestamp in the select criteria can be omitted, as it only serves the purpose
     # on making the export more readable to a human.
 
@@ -91,27 +93,20 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_n
         posts.append(row)
         fileidlist.append(row[3])
 
-    # Create a download button for the CSV file
-    current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-    if teams_name is None:
+    if not teams_export :
         file_export_data = export_to_csv_clean(posts)
-        with open("channel_export/"+current_datetime + "_" + string_to_filename(chan_name) + ".csv", 'wb') as file:
+        with open("channel_export/"+string_to_filename(chan_name) + ".csv", 'wb') as file:
             file.write(file_export_data)
 
-        #metadata,isconstrained = export_channel_members(chan_id)
         metadata = export_metadata_json(chan_id)
 
-        # change accordingly if csv export needed
-        member_file_name = f'channel_export/{current_datetime}_{string_to_filename(chan_name)}_metadata.json'
-        #if isconstrained:
-        #    member_file_name = f'channel_export/{current_datetime}_{string_to_filename(chan_name)}_members_private.csv'
+        member_file_name = f'channel_export/{string_to_filename(chan_name)}_metadata.json'
 
         with open(member_file_name, 'wb') as file:
             file.write(metadata)
 
         st.success(
-            "Download Complete with " + current_datetime + "_" + string_to_filename(chan_name) + ".csv"
+            "Download Complete with " + string_to_filename(chan_name) + ".csv"
         )
         # Convert the list to a DataFrame
         df = pd.DataFrame(posts)

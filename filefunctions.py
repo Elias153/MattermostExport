@@ -45,19 +45,10 @@ def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists):
                 exit(1)
 
             # metadata export
-
-            # COMMENT THIS IN AND FOLLOWING LINE OUT FOR csv Export (! make sure you also call create_zip_archive with the correct data-lists)
-            # metadata_csv,is_constrained = metadata_lists[index]
             metadata_json = metadata_lists[index]
             try:
                 metadata_file_name = f'metadata'
-
                 zf.writestr(folder_path+f"{metadata_file_name}.json",metadata_json)
-
-                # COMMENT IN FOR CSV Export
-                # if is_constrained:
-                #    metadata_file_name = f'metadata_private'
-                # zf.writestr(folder_path+f"{member_file_name}.csv",metadata_csv)
             except TypeError:
                 print(str(metadata_json) + " is a tuple.. ?")
                 exit(1)
@@ -78,10 +69,12 @@ def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists):
     mem_zip.seek(0)
     return mem_zip.read()
 
+# reads config from yaml file
 def read_database_config(file_path):
     with open(file_path, 'r') as file:
         config = yaml.safe_load(file)
     return config
+
 
 def export_to_csv_clean(data):
     # Create a CSV string from the data
