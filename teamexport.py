@@ -48,7 +48,7 @@ def export_data_postgres_team(team_id,team_name):
     st.download_button(
         label="Download Export of Team as zip",
         data=zip_bytes,
-        file_name="exported_files.zip",
+        file_name=f"{team_name}_export.zip",
         mime="application/zip"
     )
 
