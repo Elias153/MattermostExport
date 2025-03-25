@@ -2,6 +2,7 @@
 _The Streamlit Mattermost Channel Post Exporter_ 
 - credits to https://github.com/datadelft/MM.C.P.E./tree/master (base of the script)
 > Script has been extended to include export of attachments and teams, and include support for postgres instead of mysql.
+> Also now exports metadata such as channelmembers, whether the channel is private/public, and channeladmins in JSON format
 
 ## Introduction
 
