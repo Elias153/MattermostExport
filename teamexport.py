@@ -16,7 +16,7 @@ def export_data_postgres_team(team_id,team_name):
     )
     total_channels = len(channel_ids)
     # loop to export all channels of a team
-    for i in range(len(channel_ids)):
+    for i in range(total_channels):
         chan_id = channel_ids[i]
         chan_name = channel_names[i]
         latest_date, earliest_date = select_default_timestamps(chan_id)
@@ -25,12 +25,10 @@ def export_data_postgres_team(team_id,team_name):
         # note that download_string is a tuple (filename,filedata)
         download_string, attachment_list = export_data_postgres(chan_id, chan_name, earliest_date, latest_date,True)
 
-        #metadata_csv = export_channel_members(chan_id)
         metadata_json = export_metadata_json(chan_id)
 
         # a list of metadata (members,admins,private/public) of the respective channel
 
-        #metadata_lists.append(metadata_csv)
         metadata_lists.append(metadata_json)
 
         # a list of the download strings for the respective export files
