@@ -1,5 +1,5 @@
 # ALL direct messages OR group channels are exported here, or rather : channels which are not assigned to a specific team
-from channelexport import export_data_postgres, export_channel_members
+from channelexport import export_data_postgres, export_channel_members, export_metadata_json
 from database import query_db_postgres
 from filefunctions import create_zip_archive
 from webfunctions import select_default_timestamps
@@ -26,7 +26,7 @@ def get_channels_from_dmgroup():
 def export_direct_messages(channel_names_from_database, channel_ids_from_database):
     download_links = []
     attachment_id_lists = []
-    member_lists = []
+    metadata_lists = []
 
     for i in range(len(channel_ids_from_database)):
         chan_id = channel_ids_from_database[i]
@@ -34,10 +34,11 @@ def export_direct_messages(channel_names_from_database, channel_ids_from_databas
 
         latest_date, earliest_date = select_default_timestamps(chan_id)
         download_string, attachment_list = export_data_postgres(chan_id, chan_name, earliest_date, latest_date, True)
-        file_member_data = export_channel_members(chan_id)
+        #file_member_data = export_channel_members(chan_id)
+        metadata_json = export_metadata_json(chan_id)
 
         # a list of usernames/userids of the members of the respective channel
-        member_lists.append(file_member_data)
+        metadata_lists.append(metadata_json)
 
         # a list of the download strings for the respective export files
         download_links.append(download_string)
@@ -45,7 +46,7 @@ def export_direct_messages(channel_names_from_database, channel_ids_from_databas
         # a list of lists of file_ids of the attachments
         attachment_id_lists.append(attachment_list)
 
-    zip_bytes = create_zip_archive(download_links, attachment_id_lists, member_lists)
+    zip_bytes = create_zip_archive(download_links, attachment_id_lists, metadata_lists)
 
     print("Export Complete")
     st.download_button(

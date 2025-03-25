@@ -1,6 +1,7 @@
 import base64
 import csv
 import io
+import json
 import mimetypes
 import os
 import zipfile
@@ -10,7 +11,7 @@ import yaml
 import streamlit as st
 import magic
 
-def create_zip_archive(file_tuples,attachment_id_lists, member_lists):
+def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists):
     from channelexport import export_attachments
     """
     Given a list of tuples (file_name, file_data), create a ZIP archive in memory.
@@ -39,21 +40,26 @@ def create_zip_archive(file_tuples,attachment_id_lists, member_lists):
             file_path = folder_path + file_name  # e.g., "report/report.csv"
             try:
                 zf.writestr(file_path, file_data)
-                #file_data = file_data.encode('utf-8')
             except TypeError:
                 print(str(file_data) + " is a tuple.. ?")
                 exit(1)
-            #zf.writestr(file_path, file_data)
 
-            # channel-member export
-            file_member_data,is_constrained = member_lists[index]
+            # metadata export
+
+            # COMMENT THIS IN AND FOLLOWING LINE OUT FOR csv Export (! make sure you also call create_zip_archive with the correct data-lists)
+            # metadata_csv,is_constrained = metadata_lists[index]
+            metadata_json = metadata_lists[index]
             try:
-                member_file_name = f'members.csv'
-                if is_constrained:
-                    member_file_name = f'members_private.csv'
-                zf.writestr(folder_path+f"{member_file_name}",file_member_data)
+                metadata_file_name = f'metadata'
+
+                zf.writestr(folder_path+f"{metadata_file_name}.json",metadata_json)
+
+                # COMMENT IN FOR CSV Export
+                # if is_constrained:
+                #    metadata_file_name = f'metadata_private'
+                # zf.writestr(folder_path+f"{member_file_name}.csv",metadata_csv)
             except TypeError:
-                print(str(file_member_data) + " is a tuple.. ?")
+                print(str(metadata_json) + " is a tuple.. ?")
                 exit(1)
 
             # attachment export
@@ -64,7 +70,6 @@ def create_zip_archive(file_tuples,attachment_id_lists, member_lists):
             # OR (here) there was not an attachment found in the current channel.
             if attachments is not None:
                 for att_file_name, att_file_data in attachments:
-                    #print("This worked.")
                     att_file_path = attachments_path + att_file_name
                     zf.writestr(att_file_path, att_file_data)
                     print("Saved Attachment: " + att_file_path)
@@ -78,27 +83,6 @@ def read_database_config(file_path):
         config = yaml.safe_load(file)
     return config
 
-
-def export_to_csv(data, file_name):
-    # Create a CSV string from the data
-    csv_data = StringIO()
-    writer = csv.writer(csv_data, delimiter=';')
-    writer.writerows(data)
-
-    # Prepend BOM for UTF-8
-    bom = '\ufeff'
-    csv_data_str = (bom + csv_data.getvalue()).encode('utf-8').strip()
-
-    with open(f'{file_name}', 'wb') as file:
-        file.write(csv_data_str)
-
-    #st.download_button(
-    #    label="Download CSV",
-    #    data=csv_data_str,
-    #    file_name=file_name,
-    #    mime="text/csv"
-    #)
-
 def export_to_csv_clean(data):
     # Create a CSV string from the data
     csv_data = StringIO()
@@ -109,6 +93,18 @@ def export_to_csv_clean(data):
     bom = '\ufeff'
     csv_data_str = (bom + csv_data.getvalue()).encode('utf-8').strip()
     return csv_data_str
+
+
+def export_to_json_clean(data):
+    # Convert the data to a JSON string
+    json_str = json.dumps(data, ensure_ascii=False, indent=4)
+
+    # Optionally, prepend a BOM for UTF-8
+    bom = '\ufeff'
+    json_str = bom + json_str
+
+    # Encode the JSON string to UTF-8 bytes and strip any trailing whitespace
+    return json_str.encode('utf-8').strip()
 
 def string_to_filename(s):
     # Replace invalid characters with underscores

@@ -9,8 +9,9 @@ import pandas as pd
 import requests
 import streamlit as st
 from database import query_db_postgres
-from filefunctions import export_to_csv, string_to_filename, read_database_config, determine_file_extension, \
-    export_to_csv_clean
+from filefunctions import string_to_filename, read_database_config, determine_file_extension, \
+    export_to_csv_clean, export_to_json_clean
+
 
 def export_channel_members(chan_id):
     query = """SELECT Users.username,Users.id FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
@@ -18,6 +19,7 @@ def export_channel_members(chan_id):
     ChannelMembers.userid = Users.id WHERE ChannelMembers.channelid = %s AND ChannelMemberHistory.leavetime IS NULL"""
 
     users = []
+
     headers = ["Username", "User ID"]
     users.append(headers)
 
@@ -32,6 +34,40 @@ def export_channel_members(chan_id):
     members_data = export_to_csv_clean(users)
 
     return members_data, isconstrained
+
+def export_metadata_json(chan_id):
+    query = """SELECT Users.username,Users.id,ChannelMembers.schemeadmin FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
+    AND ChannelMemberHistory.userid = ChannelMembers.userid INNER JOIN Users ON ChannelMemberHistory.userid = Users.id AND 
+    ChannelMembers.userid = Users.id WHERE ChannelMembers.channelid = %s AND ChannelMemberHistory.leavetime IS NULL"""
+
+    usernames = []
+    userids = []
+    schemeadmins = []
+
+    for row in query_db_postgres(query,chan_id,True):
+        usernames.append(row[0])
+        userids.append(row[1])
+        schemeadmins.append(row[2])
+
+    query="""SELECT publicchannels.displayname FROM publicchannels WHERE publicchannels.id = %s"""
+    isconstrained = True
+    for row in query_db_postgres(query,chan_id,True):
+        isconstrained = False
+
+    # Create the structured dictionary
+    metadata_dict = {
+        "members": {
+            "usernames": usernames,
+            "userids": userids,
+            "schemeadmins": schemeadmins,
+        },
+        "is_private": isconstrained
+
+    }
+
+    metadata = export_to_json_clean(metadata_dict)
+
+    return metadata
 
 def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_name = None):
     # please note that to_timestamp in the select criteria can be omitted, as it only serves the purpose
@@ -63,15 +99,16 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_n
         with open("channel_export/"+current_datetime + "_" + string_to_filename(chan_name) + ".csv", 'wb') as file:
             file.write(file_export_data)
 
-        member_data,isconstrained = export_channel_members(chan_id)
+        #metadata,isconstrained = export_channel_members(chan_id)
+        metadata = export_metadata_json(chan_id)
 
-        member_file_name = f'channel_export/{current_datetime}_{string_to_filename(chan_name)}_members_public.csv'
-        if isconstrained:
-            member_file_name = f'channel_export/{current_datetime}_{string_to_filename(chan_name)}_members_private.csv'
+        # change accordingly if csv export needed
+        member_file_name = f'channel_export/{current_datetime}_{string_to_filename(chan_name)}_metadata.json'
+        #if isconstrained:
+        #    member_file_name = f'channel_export/{current_datetime}_{string_to_filename(chan_name)}_members_private.csv'
 
         with open(member_file_name, 'wb') as file:
-            file.write(member_data)
-        #export_to_csv(member_data, current_datetime + "_" + string_to_filename(chan_name) + "_members.csv")
+            file.write(metadata)
 
         st.success(
             "Download Complete with " + current_datetime + "_" + string_to_filename(chan_name) + ".csv"

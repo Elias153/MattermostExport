@@ -1,4 +1,6 @@
-from channelexport import export_data_postgres, export_channel_members
+import json
+
+from channelexport import export_data_postgres, export_channel_members, export_metadata_json
 from database import query_db_postgres
 from filefunctions import create_zip_archive
 from webfunctions import select_default_timestamps
@@ -7,7 +9,7 @@ import streamlit as st
 def export_data_postgres_team(team_id,team_name):
     download_links = []
     attachment_id_lists = []
-    member_lists = []
+    metadata_lists = []
     # retrieve the relevant channels from the selected team
     channel_ids, channel_names = get_channels_from_team(
         team_id
@@ -22,10 +24,14 @@ def export_data_postgres_team(team_id,team_name):
         # determine the download link for the current channel
         # note that download_string is a tuple (filename,filedata)
         download_string, attachment_list = export_data_postgres(chan_id, chan_name, earliest_date, latest_date,team_name)
-        file_member_data = export_channel_members(chan_id)
 
-        # a list of usernames/userids of the members of the respective channel
-        member_lists.append(file_member_data)
+        #metadata_csv = export_channel_members(chan_id)
+        metadata_json = export_metadata_json(chan_id)
+
+        # a list of metadata (members,admins,private/public) of the respective channel
+
+        #metadata_lists.append(metadata_csv)
+        metadata_lists.append(metadata_json)
 
         # a list of the download strings for the respective export files
         download_links.append(download_string)
@@ -38,7 +44,7 @@ def export_data_postgres_team(team_id,team_name):
         #    progress = ((i + 1) / total_channels) * 100
         #    print(f"Progress: {progress:.1f}% completed")
 
-    zip_bytes = create_zip_archive(download_links, attachment_id_lists, member_lists)
+    zip_bytes = create_zip_archive(download_links, attachment_id_lists, metadata_lists)
     st.download_button(
         label="Download Export of Team as zip",
         data=zip_bytes,
