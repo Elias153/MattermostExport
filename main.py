@@ -22,11 +22,6 @@ if __name__ == '__main__':
     # starting export-date and ending-export-date
     channel_id, channel_name,earliest_date,latest_date = web.channel_name_dropdown_postgres()
 
-    #team_id, team_name = teams_name_dropdown_postgres()
-
-    #if st.button('Export Team'):
-    #    export_data_postgres_team(team_id, team_name)
-
     # Create a clickable export-button
     if st.button('Export Channel'):
 

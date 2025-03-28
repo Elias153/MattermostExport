@@ -35,18 +35,20 @@ def export_channel_members(chan_id):
     return members_data, isconstrained
 
 def export_metadata_json(chan_id):
-    query = """SELECT Users.username,Users.id,ChannelMembers.schemeadmin FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
+    query = """SELECT Users.username,Users.id,ChannelMembers.schemeadmin,channels.creatorid FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
     AND ChannelMemberHistory.userid = ChannelMembers.userid INNER JOIN Users ON ChannelMemberHistory.userid = Users.id AND 
-    ChannelMembers.userid = Users.id WHERE ChannelMembers.channelid = %s AND ChannelMemberHistory.leavetime IS NULL"""
+    ChannelMembers.userid = Users.id INNER JOIN channels ON ChannelMembers.channelid = channels.id WHERE ChannelMembers.channelid = %s AND ChannelMemberHistory.leavetime IS NULL"""
 
     usernames = []
     userids = []
     schemeadmins = []
+    creator_id = ""
 
     for row in query_db_postgres(query,chan_id,True):
         usernames.append(row[0])
         userids.append(row[1])
         schemeadmins.append(row[2])
+        creator_id = row[3]
 
     query="""SELECT publicchannels.displayname FROM publicchannels WHERE publicchannels.id = %s"""
     isconstrained = True
@@ -63,6 +65,7 @@ def export_metadata_json(chan_id):
         },
         "is_private": isconstrained,
         "channel_id": chan_id,
+        "creator_id": creator_id,
         "export_date": current_datetime
 
     }
@@ -72,8 +75,7 @@ def export_metadata_json(chan_id):
     return metadata
 
 def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_export = False):
-    # please note that to_timestamp in the select criteria can be omitted, as it only serves the purpose
-    # on making the export more readable to a human.
+    # use to_timestamp for the select criteria as a wrapper for the timestamp if needed for export.
 
     # comparisons between dates using sql assume, that if there's not a specific time specified,
     # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison (see last line) has to be adjusted a bit, to not
@@ -185,14 +187,12 @@ def export_attachments(file_ids, teams_export):
                 # if the extension could not be detected, we use the mime-type library
                 final_filename = f"{formatted_id}{determine_file_extension(file_data)}"
 
+            # attachments in teams export must be saved in the exported zip file, thus they will be returned
             if not teams_export:
                 open(final_filename, 'wb').write(file_data)
                 print("Download Complete with " + final_filename)
             else:
                 output.append((final_filename,file_data))
 
-    if teams_export:
-        return output
-
-    # signal that there are no attachments found through this return value
-    return None
+    # note that this value only serves a purpose for team-exports
+    return output

@@ -57,13 +57,11 @@ def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists):
             file_attachment_ids = attachment_id_lists[index]
             attachments = export_attachments(file_attachment_ids,True)
 
-            # "None" is the return value if either the attachment export is not part of a team-export
-            # OR (here) there was not an attachment found in the current channel.
-            if attachments is not None:
-                for att_file_name, att_file_data in attachments:
-                    att_file_path = attachments_path + att_file_name
-                    zf.writestr(att_file_path, att_file_data)
-                    print("Saved Attachment: " + att_file_path)
+            # if no attachment could be found for the channel, the loop simply does not execute.
+            for att_file_name, att_file_data in attachments:
+                att_file_path = attachments_path + att_file_name
+                zf.writestr(att_file_path, att_file_data)
+                print("Saved Attachment: " + att_file_path)
             index+=1
 
     mem_zip.seek(0)

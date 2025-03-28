@@ -28,7 +28,10 @@ def export_direct_messages(channel_names_from_database, channel_ids_from_databas
     attachment_id_lists = []
     metadata_lists = []
 
-    for i in range(len(channel_ids_from_database)):
+
+    total_channels = len(channel_names_from_database)
+    print("Amount of channels exported: ", total_channels)
+    for i in range(total_channels):
         chan_id = channel_ids_from_database[i]
         chan_name = channel_names_from_database[i]
 
@@ -45,6 +48,12 @@ def export_direct_messages(channel_names_from_database, channel_ids_from_databas
 
         # a list of lists of file_ids of the attachments
         attachment_id_lists.append(attachment_list)
+
+        # Update progress every 10 channels or on the last iteration
+        if (i + 1) % 10 == 0 or (i + 1) == total_channels:
+            progress = ((i + 1) / total_channels) * 100
+            print(f"Progress: {progress:.1f}% completed")
+
 
     zip_bytes = create_zip_archive(download_links, attachment_id_lists, metadata_lists)
 
