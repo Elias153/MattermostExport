@@ -38,9 +38,9 @@ def export_data_postgres_team(team_id,team_name):
         attachment_id_lists.append(attachment_list)
 
         # Update progress every 10 channels or on the last iteration
-        #if (i + 1) % 10 == 0 or (i + 1) == total_channels:
-        #    progress = ((i + 1) / total_channels) * 100
-        #    print(f"Progress: {progress:.1f}% completed")
+        if (i + 1) % 10 == 0 or (i + 1) == total_channels:
+            progress = ((i + 1) / total_channels) * 100
+            print(f"Progress: {progress:.1f}% completed")
 
     zip_bytes = create_zip_archive(download_links, attachment_id_lists, metadata_lists)
     st.download_button(
