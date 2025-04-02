@@ -1,7 +1,6 @@
 import streamlit as st
 import webfunctions as web
 from channelexport import export_data_postgres
-from database import query_db_postgres
 from dmgroupexport import get_channels_from_dmgroup, export_direct_messages
 from teamexport import export_data_postgres_team
 from webfunctions import teams_name_dropdown_postgres

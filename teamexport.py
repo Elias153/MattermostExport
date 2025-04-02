@@ -1,6 +1,6 @@
 import json
 
-from channelexport import export_data_postgres, export_channel_members, export_metadata_json
+from channelexport import export_data_postgres, export_metadata_json
 from database import query_db_postgres
 from filefunctions import create_zip_archive
 from webfunctions import select_default_timestamps

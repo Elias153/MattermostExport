@@ -11,29 +11,6 @@ from database import query_db_postgres
 from filefunctions import string_to_filename, read_database_config, determine_file_extension, \
     export_to_csv_clean, export_to_json_clean
 
-
-def export_channel_members(chan_id):
-    query = """SELECT Users.username,Users.id FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
-    AND ChannelMemberHistory.userid = ChannelMembers.userid INNER JOIN Users ON ChannelMemberHistory.userid = Users.id AND 
-    ChannelMembers.userid = Users.id WHERE ChannelMembers.channelid = %s AND ChannelMemberHistory.leavetime IS NULL"""
-
-    users = []
-
-    headers = ["Username", "User ID"]
-    users.append(headers)
-
-    for row in query_db_postgres(query,chan_id,True):
-        users.append(row)
-
-    query="""SELECT publicchannels.displayname FROM publicchannels WHERE publicchannels.id = %s"""
-    isconstrained = True
-    for row in query_db_postgres(query,chan_id,True):
-        isconstrained = False
-
-    members_data = export_to_csv_clean(users)
-
-    return members_data, isconstrained
-
 def export_metadata_json(chan_id):
     query = """SELECT Users.username,Users.id,ChannelMembers.schemeadmin,channels.creatorid FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
     AND ChannelMemberHistory.userid = ChannelMembers.userid INNER JOIN Users ON ChannelMemberHistory.userid = Users.id AND 
