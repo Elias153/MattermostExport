@@ -1,15 +1,10 @@
-import base64
 import csv
 import io
 import json
-import mimetypes
 import os
 import zipfile
-from datetime import datetime
 from io import StringIO
 import yaml
-import streamlit as st
-import magic
 
 def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists):
     from channelexport import export_attachments
