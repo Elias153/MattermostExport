@@ -104,8 +104,3 @@ def string_to_filename(s):
     # Remove leading/trailing spaces and double underscores
     filename = filename.strip().replace('__', '_')
     return filename
-
-def determine_file_extension(file_data):
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(file_data)
-    return mimetypes.guess_extension(mime_type)

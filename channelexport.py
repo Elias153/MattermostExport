@@ -3,16 +3,15 @@ import json
 import re
 from datetime import datetime
 
-import filetype
 import pandas as pd
 import requests
 import streamlit as st
 from database import query_db_postgres
-from filefunctions import string_to_filename, read_database_config, determine_file_extension, \
+from filefunctions import string_to_filename, read_database_config, \
     export_to_csv_clean, export_to_json_clean
 
 def export_metadata_json(chan_id):
-    query = """SELECT Users.username,Users.id,ChannelMembers.schemeadmin,channels.creatorid FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
+    query = """SELECT Users.username,Users.id,ChannelMembers.schemeadmin,channels.creatorid,channels.purpose FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
     AND ChannelMemberHistory.userid = ChannelMembers.userid INNER JOIN Users ON ChannelMemberHistory.userid = Users.id AND 
     ChannelMembers.userid = Users.id INNER JOIN channels ON ChannelMembers.channelid = channels.id WHERE ChannelMembers.channelid = %s AND ChannelMemberHistory.leavetime IS NULL"""
 
@@ -20,18 +19,20 @@ def export_metadata_json(chan_id):
     userids = []
     schemeadmins = []
     creator_id = ""
-
+    description = ""
     for row in query_db_postgres(query,chan_id,True):
         usernames.append(row[0])
         userids.append(row[1])
         schemeadmins.append(row[2])
         creator_id = row[3]
+        description = row[4]
 
     query="""SELECT publicchannels.displayname FROM publicchannels WHERE publicchannels.id = %s"""
     isconstrained = True
     for row in query_db_postgres(query,chan_id,True):
         isconstrained = False
 
+    query=""""""
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     # Create the structured dictionary
     metadata_dict = {
@@ -43,7 +44,8 @@ def export_metadata_json(chan_id):
         "is_private": isconstrained,
         "channel_id": chan_id,
         "creator_id": creator_id,
-        "export_date": current_datetime
+        "export_date": current_datetime,
+        "description": description
 
     }
 
@@ -130,6 +132,11 @@ def export_attachments(file_ids, teams_export):
     auth_token = r.headers.get("Token")
     hed = {'Authorization': 'Bearer ' + auth_token}
 
+    # prepare the query for retrieving the file mimetype / extension
+    # you can also retrieve the original file name if you want.
+    query = """SELECT fileinfo.extension FROM fileinfo WHERE fileinfo.id = %s"""
+    filetype_extension = ""
+
     output = []
     # retrieve and export files via mattermost api
     for ids in file_ids:
@@ -156,13 +163,10 @@ def export_attachments(file_ids, teams_export):
             response = requests.get(file_url, headers=hed)
             file_data = response.content
             # Determine the extension from the file content
-            kind = filetype.guess(file_data)
-            if kind:
-                # the extension could be guessed using the filetype lib, which is more precise
-                final_filename = f"{formatted_id}.{kind.extension}"
-            else:
-                # if the extension could not be detected, we use the mime-type library
-                final_filename = f"{formatted_id}{determine_file_extension(file_data)}"
+            for row in query_db_postgres(query,formatted_id,True):
+                filetype_extension = row[0]
+
+            final_filename = f"{formatted_id}.{filetype_extension}"
 
             # attachments in teams export must be saved in the exported zip file, thus they will be returned
             if not teams_export:
