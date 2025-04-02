@@ -1,5 +1,3 @@
-import json
-
 from channelexport import export_data_postgres, export_metadata_json
 from database import query_db_postgres
 from filefunctions import create_zip_archive
@@ -62,3 +60,7 @@ def get_channels_from_team(team_id):
             channel_names_from_database.append(channel_name)
     return channel_ids_from_database, channel_names_from_database
 
+# this function extracts the members of the team, as well as the team description.
+# TODO
+def retrieve_team_metadata(team_id):
+    query = """SELECT teammembers.userid FROM teammembers WHERE teammembers.teamid = %s"""

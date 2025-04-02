@@ -27,12 +27,8 @@ def export_metadata_json(chan_id):
         creator_id = row[3]
         description = row[4]
 
-    query="""SELECT publicchannels.displayname FROM publicchannels WHERE publicchannels.id = %s"""
-    isconstrained = True
-    for row in query_db_postgres(query,chan_id,True):
-        isconstrained = False
+    channel_is_private = is_channel_private(chan_id)
 
-    query=""""""
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     # Create the structured dictionary
     metadata_dict = {
@@ -41,7 +37,7 @@ def export_metadata_json(chan_id):
             "userids": userids,
             "schemeadmins": schemeadmins,
         },
-        "is_private": isconstrained,
+        "is_private": channel_is_private,
         "channel_id": chan_id,
         "creator_id": creator_id,
         "export_date": current_datetime,
@@ -52,6 +48,14 @@ def export_metadata_json(chan_id):
     metadata = export_to_json_clean(metadata_dict)
 
     return metadata
+
+def is_channel_private(chan_id):
+    query = """SELECT publicchannels.displayname FROM publicchannels WHERE publicchannels.id = %s"""
+    channel_is_private = True
+    for row in query_db_postgres(query,chan_id,True):
+        channel_is_private = False
+
+    return channel_is_private
 
 def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_export = False):
     # use to_timestamp for the select criteria as a wrapper for the timestamp if needed for export.
