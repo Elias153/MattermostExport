@@ -1,6 +1,7 @@
 import ast
 import json
 import re
+import os
 from datetime import datetime
 
 import pandas as pd
@@ -79,13 +80,17 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
         fileidlist.append(row[3])
 
     if not teams_export :
+
+        export_dir_name = f"{string_to_filename(chan_name)}_export"
+        os.makedirs(f"{export_dir_name}", exist_ok=True)
+
         file_export_data = export_to_csv_clean(posts)
-        with open("channel_export/"+string_to_filename(chan_name) + ".csv", 'wb') as file:
+        with open(f"{export_dir_name}/{export_dir_name}.csv", 'wb') as file:
             file.write(file_export_data)
 
         metadata = export_metadata_json(chan_id)
 
-        member_file_name = f'channel_export/{string_to_filename(chan_name)}_metadata.json'
+        member_file_name = f'{export_dir_name}/{string_to_filename(chan_name)}_metadata.json'
 
         with open(member_file_name, 'wb') as file:
             file.write(metadata)
@@ -106,7 +111,7 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
         # Display results
         st.table(styled_df)
 
-        export_attachments(fileidlist,False)
+        export_attachments(fileidlist,False, export_dir_name)
     else:
         download_data = export_to_csv_clean(posts)
 
@@ -117,7 +122,7 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
         # to store the attachments in the correct location of the zip export
         return downloadstring, fileidlist
 
-def export_attachments(file_ids, teams_export):
+def export_attachments(file_ids, teams_export, export_dir_name = None):
     # setup api-connection
     config = read_database_config('connection.yaml')
     connection = config['connection']
@@ -174,6 +179,16 @@ def export_attachments(file_ids, teams_export):
 
             # attachments in teams export must be saved in the exported zip file, thus they will be returned
             if not teams_export:
+               # output directory
+                attachment_dir = f"{export_dir_name}/attachments"
+                # ensure the root directory exists
+                os.makedirs(f"{export_dir_name}", exist_ok=True)
+                # ensure the attachment output directory exists
+                os.makedirs(f"{attachment_dir}", exist_ok=True)
+
+                # adjust the output path
+                final_filename = f"{attachment_dir}/{final_filename}"
+                # write
                 open(final_filename, 'wb').write(file_data)
                 print("Download Complete with " + final_filename)
             else:

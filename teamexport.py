@@ -63,4 +63,22 @@ def get_channels_from_team(team_id):
 # this function extracts the members of the team, as well as the team description.
 # TODO
 def retrieve_team_metadata(team_id):
-    query = """SELECT teammembers.userid FROM teammembers WHERE teammembers.teamid = %s"""
+
+    team_members = []
+    team_admins = []
+    query = """SELECT teammembers.userid,teammembers.schemeadmin FROM teammembers WHERE teammembers.teamid = %s"""
+
+    for row in query_db_postgres(query,team_id,True):
+        print("todo")
+    query = """SELECT teams.description, teams.email FROM teams WHERE teams.id = %s"""
+
+    metadata_dict = {
+        "members": {
+            "usernames": team_members,
+        },
+        "is_private": "channel_is_private",
+        "team_id": "chan_id",
+        "team_description": "creator_id",
+        "allow_open_invite": "",
+
+    }
