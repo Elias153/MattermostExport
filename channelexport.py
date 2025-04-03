@@ -12,9 +12,21 @@ from filefunctions import string_to_filename, read_database_config, \
     export_to_csv_clean, export_to_json_clean
 
 def export_metadata_json(chan_id):
-    query = """SELECT Users.username,Users.id,ChannelMembers.schemeadmin,channels.creatorid,channels.purpose FROM ChannelMembers INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid
-    AND ChannelMemberHistory.userid = ChannelMembers.userid INNER JOIN Users ON ChannelMemberHistory.userid = Users.id AND 
-    ChannelMembers.userid = Users.id INNER JOIN channels ON ChannelMembers.channelid = channels.id WHERE ChannelMembers.channelid = %s AND ChannelMemberHistory.leavetime IS NULL"""
+    query = """
+    SELECT 
+        Users.username,
+        Users.id,
+        ChannelMembers.schemeadmin,
+        channels.creatorid,
+        channels.purpose 
+    FROM 
+        ChannelMembers 
+        INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid AND ChannelMemberHistory.userid = ChannelMembers.userid 
+        INNER JOIN Users ON ChannelMemberHistory.userid = Users.id AND ChannelMembers.userid = Users.id 
+        INNER JOIN channels ON ChannelMembers.channelid = channels.id 
+    WHERE 
+        ChannelMembers.channelid = %s 
+        AND ChannelMemberHistory.leavetime IS NULL"""
 
     members_dict = {}
     creator_id = ""

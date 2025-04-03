@@ -67,7 +67,16 @@ def retrieve_team_metadata(team_id):
 
     members_dict = {}
 
-    query = """SELECT users.username,users.id,teammembers.schemeadmin FROM teammembers INNER JOIN users ON users.id = teammembers.userid WHERE teammembers.teamid = %s"""
+    query = """
+    SELECT 
+        users.username,
+        users.id,
+        teammembers.schemeadmin 
+    FROM 
+        teammembers 
+        INNER JOIN users ON users.id = teammembers.userid 
+    WHERE 
+        teammembers.teamid = %s"""
 
     for row in query_db_postgres(query,team_id,True):
         username = row[0]
