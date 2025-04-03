@@ -56,8 +56,11 @@ def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists, team_me
             # if no attachment could be found for the channel, the loop simply does not execute.
             for att_file_name, att_file_data in attachments:
                 att_file_path = attachments_path + att_file_name
-                zf.writestr(att_file_path, att_file_data)
-                print("Saved Attachment: " + att_file_path)
+                if att_file_path not in zf.namelist():
+                    zf.writestr(att_file_path, att_file_data)
+                    print("Saved Attachment: " + att_file_path)
+                else:
+                    print(f"{att_file_path} already has been exported.")
 
             # export team metadata (once)
             if index==0 and team_metadata is not None:

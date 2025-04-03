@@ -190,9 +190,14 @@ def export_attachments(file_ids, teams_export, export_dir_name = None):
 
                 # adjust the output path
                 final_filename = f"{attachment_dir}/{final_filename}"
-                # write
-                open(final_filename, 'wb').write(file_data)
-                print("Download Complete with " + final_filename)
+
+                # check if the file already exists prior to download
+                if os.path.exists(final_filename):
+                    print(f"{final_filename} already exists. Skipping download.")
+                else:
+                    with open(final_filename, 'wb') as f:
+                        f.write(file_data)
+                    print("Download Complete with " + final_filename)
             else:
                 output.append((final_filename,file_data))
 
