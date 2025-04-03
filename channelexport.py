@@ -63,10 +63,29 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
     # comparisons between dates using sql assume, that if there's not a specific time specified,
     # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison (see last line) has to be adjusted a bit, to not
     # accidentally exclude the last day when something was posted in the channel.
-    query = """SELECT Posts.CreateAt/1000, UserName, Message, Posts.type, reactions.emojiname, Posts.fileids, fileinfo.name FROM Posts INNER JOIN Users
-            ON Posts.UserId = Users.Id LEFT JOIN fileinfo ON Posts.id = fileinfo.postid LEFT JOIN reactions ON Posts.ChannelId = reactions.ChannelId AND Posts.id = reactions.postid
-            WHERE Posts.editat = 0 AND Posts.ChannelId = %s AND to_timestamp(Posts.CreateAt/1000) >= %s 
-            AND editat = 0 AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' ORDER BY Posts.CreateAt"""
+    query = """
+    SELECT 
+        Posts.CreateAt/1000,
+        UserName, 
+        Message, 
+        Posts.type, 
+        reactions.emojiname, 
+        CASE
+            WHEN length(Posts.fileids) <= 2 THEN NULL
+        ELSE Posts.fileids
+        END AS fileids, 
+        fileinfo.name 
+    FROM 
+        Posts 
+        INNER JOIN Users ON Posts.UserId = Users.Id 
+        LEFT JOIN fileinfo ON Posts.id = fileinfo.postid 
+        LEFT JOIN reactions ON Posts.ChannelId = reactions.ChannelId AND Posts.id = reactions.postid
+    WHERE 
+        Posts.editat = 0 
+        AND Posts.ChannelId = %s 
+        AND to_timestamp(Posts.CreateAt/1000) >= %s 
+        AND editat = 0 AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' 
+    ORDER BY Posts.CreateAt"""
 
     fileidlist = []
     # Fetch rows into lists
@@ -152,7 +171,7 @@ def export_attachments(file_ids, teams_export, export_dir_name = None):
     output = []
     # retrieve and export files via mattermost api
     for ids in file_ids:
-        if ids == "[]":
+        if ids is None:
             # if there is no id for a given message, nothing needs to be done
             pass
         else:
