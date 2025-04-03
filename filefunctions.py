@@ -6,7 +6,8 @@ import zipfile
 from io import StringIO
 import yaml
 
-def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists):
+# team metadata if available (no direct message/group export) also passed
+def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists, team_metadata = None):
     from channelexport import export_attachments
     """
     Given a list of tuples (file_name, file_data), create a ZIP archive in memory.
@@ -57,6 +58,10 @@ def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists):
                 att_file_path = attachments_path + att_file_name
                 zf.writestr(att_file_path, att_file_data)
                 print("Saved Attachment: " + att_file_path)
+
+            # export team metadata (once)
+            if index==0 and team_metadata is not None:
+                zf.writestr("team_metadata.json", team_metadata)
             index+=1
 
     mem_zip.seek(0)
