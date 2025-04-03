@@ -80,7 +80,7 @@ def read_database_config(file_path):
 def export_to_csv_clean(data):
     # Create a CSV string from the data
     csv_data = StringIO()
-    writer = csv.writer(csv_data, delimiter=';')
+    writer = csv.writer(csv_data, delimiter=';', quoting=csv.QUOTE_ALL)
     writer.writerows(data)
 
     # Prepend BOM for UTF-8

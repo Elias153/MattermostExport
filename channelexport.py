@@ -63,20 +63,21 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
     # comparisons between dates using sql assume, that if there's not a specific time specified,
     # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison (see last line) has to be adjusted a bit, to not
     # accidentally exclude the last day when something was posted in the channel.
-    query = """SELECT Posts.CreateAt/1000, UserName, Message, Posts.type, Posts.fileids, fileinfo.name FROM Posts INNER JOIN Users
-            ON Posts.UserId = Users.Id LEFT JOIN fileinfo ON Posts.id = fileinfo.postid WHERE Posts.editat = 0 AND Posts.ChannelId = %s AND to_timestamp(Posts.CreateAt/1000) >= %s 
+    query = """SELECT Posts.CreateAt/1000, UserName, Message, Posts.type, reactions.emojiname, Posts.fileids, fileinfo.name FROM Posts INNER JOIN Users
+            ON Posts.UserId = Users.Id LEFT JOIN fileinfo ON Posts.id = fileinfo.postid LEFT JOIN reactions ON Posts.ChannelId = reactions.ChannelId AND Posts.id = reactions.postid
+            WHERE Posts.editat = 0 AND Posts.ChannelId = %s AND to_timestamp(Posts.CreateAt/1000) >= %s 
             AND editat = 0 AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' ORDER BY Posts.CreateAt"""
 
     fileidlist = []
     # Fetch rows into lists
     posts = []
 
-    headers = ["Date", "User", "Message", "Type", "Attachments", "Filename"]
+    headers = ["Date", "User", "Message", "Type", "Reactions", "Attachments", "Filename"]
     posts.append(headers)
 
     for row in query_db_postgres(query,(chan_id,earliest_date,latest_date),True):
 
-        file_id = row[4]
+        file_id = row[5]
 
         posts.append(row)
         fileidlist.append(file_id)
