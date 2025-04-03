@@ -2,9 +2,9 @@
 
 For reaction export this query (instead of the one at export_data_postgres in channelexport.py) manages to export the reactions and its respective counts.
 
-Only issue : if a message has multiple different reactions, then the same message will get exported twice.
+Only issue : if a message has multiple different reactions, then the same message will get exported the same amount as the amount of distinct reactions it has.
 
-It is unclear at the moment how to handle this.
+It is unclear at the moment how to handle this, as you also have to export WHO actually reacted for each distinct reaction. My first instinct would be to create a separate csv export for this..
 
 ```sql
     SELECT
