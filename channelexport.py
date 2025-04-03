@@ -76,25 +76,23 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
     # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison (see last line) has to be adjusted a bit, to not
     # accidentally exclude the last day when something was posted in the channel.
     query = """
-    SELECT 
-        Posts.CreateAt/1000,
-        UserName, 
-        Message, 
-        Posts.type, 
-        reactions.emojiname, 
+    SELECT
+        Posts.CreateAt/1000 AS timestamp,
+        UserName,
+        Message,
+        Posts.type,
         CASE
             WHEN length(Posts.fileids) <= 2 THEN NULL
         ELSE Posts.fileids
-        END AS fileids, 
-        fileinfo.name 
-    FROM 
-        Posts 
-        INNER JOIN Users ON Posts.UserId = Users.Id 
-        LEFT JOIN fileinfo ON Posts.id = fileinfo.postid 
-        LEFT JOIN reactions ON Posts.ChannelId = reactions.ChannelId AND Posts.id = reactions.postid
-    WHERE 
-        Posts.editat = 0 
-        AND Posts.ChannelId = %s 
+        END AS fileids,
+        fileinfo.name
+    FROM
+        Posts
+        INNER JOIN Users ON Posts.UserId = Users.Id
+        LEFT JOIN fileinfo ON Posts.id = fileinfo.postid
+    WHERE
+        Posts.editat = 0
+        AND Posts.ChannelId = %s
         AND to_timestamp(Posts.CreateAt/1000) >= %s 
         AND editat = 0 AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' 
     ORDER BY Posts.CreateAt"""
@@ -103,12 +101,12 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
     # Fetch rows into lists
     posts = []
 
-    headers = ["Date", "User", "Message", "Type", "Reactions", "Attachments", "Filename"]
+    headers = ["Date", "User", "Message", "Type", "Attachments", "Filename"]
     posts.append(headers)
 
     for row in query_db_postgres(query,(chan_id,earliest_date,latest_date),True):
 
-        file_id = row[5]
+        file_id = row[4]
 
         posts.append(row)
         fileidlist.append(file_id)
@@ -187,6 +185,7 @@ def export_attachments(file_ids, teams_export, export_dir_name = None):
             # if there is no id for a given message, nothing needs to be done
             pass
         else:
+            ids = str(ids)
             # Safely evaluate the string to extract the file ID
             # The IDs are stored in following format: ["myid"], we only need the literal myid
             try:
