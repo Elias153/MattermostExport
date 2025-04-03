@@ -16,34 +16,33 @@ def export_metadata_json(chan_id):
     AND ChannelMemberHistory.userid = ChannelMembers.userid INNER JOIN Users ON ChannelMemberHistory.userid = Users.id AND 
     ChannelMembers.userid = Users.id INNER JOIN channels ON ChannelMembers.channelid = channels.id WHERE ChannelMembers.channelid = %s AND ChannelMemberHistory.leavetime IS NULL"""
 
-    usernames = []
-    userids = []
-    schemeadmins = []
+    members_dict = {}
     creator_id = ""
     description = ""
     for row in query_db_postgres(query,chan_id,True):
-        usernames.append(row[0])
-        userids.append(row[1])
-        schemeadmins.append(row[2])
+        username = row[0]
+        user_id = row[1]
+        scheme_admin = row[2]
         creator_id = row[3]
         description = row[4]
+
+        # Populate the members dictionary
+        members_dict[username] = {
+            "userid": user_id,
+            "schemeadmin": scheme_admin
+        }
 
     channel_is_private = is_channel_private(chan_id)
 
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     # Create the structured dictionary
     metadata_dict = {
-        "members": {
-            "usernames": usernames,
-            "userids": userids,
-            "schemeadmins": schemeadmins,
-        },
         "is_private": channel_is_private,
         "channel_id": chan_id,
         "creator_id": creator_id,
         "export_date": current_datetime,
-        "description": description
-
+        "description": description,
+        "members": members_dict
     }
 
     metadata = export_to_json_clean(metadata_dict)
