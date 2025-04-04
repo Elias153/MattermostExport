@@ -5,6 +5,14 @@ import os
 import zipfile
 from io import StringIO
 import yaml
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Set the logging level you desire (DEBUG, INFO, etc.)
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Include timestamp and level
+    datefmt='%Y-%m-%d %H:%M:%S'  # Format for the timestamp
+)
 
 # team metadata if available (no direct message/group export) also passed
 def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists, team_metadata = None):
@@ -56,15 +64,15 @@ def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists, team_me
             # if no attachment could be found for the channel, the loop simply does not execute.
             for att_file_name, att_file_data in attachments:
                 att_file_path = attachments_path + att_file_name
+                # do not export attachments that already have been exported
                 if att_file_path not in zf.namelist():
                     zf.writestr(att_file_path, att_file_data)
-                    print("Saved Attachment: " + att_file_path)
-                else:
-                    print(f"{att_file_path} already has been exported.")
 
             # export team metadata (once)
             if index==0 and team_metadata is not None:
                 zf.writestr("team_metadata.json", team_metadata)
+
+            logging.info(f"Channel {folder_name} has been exported.")
             index+=1
 
     mem_zip.seek(0)

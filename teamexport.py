@@ -3,6 +3,14 @@ from database import query_db_postgres
 from filefunctions import create_zip_archive, export_to_json_clean
 from webfunctions import select_default_timestamps
 import streamlit as st
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Set the logging level you desire (DEBUG, INFO, etc.)
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Include timestamp and level
+    datefmt='%Y-%m-%d %H:%M:%S'  # Format for the timestamp
+)
 
 def export_data_postgres_team(team_id,team_name):
     download_links = []
@@ -35,6 +43,7 @@ def export_data_postgres_team(team_id,team_name):
         # a list of lists of file_ids of the attachments
         attachment_id_lists.append(attachment_list)
 
+        logging.info(f"Prepared Export for Channel : {chan_name}")
         # Update progress every 10 channels or on the last iteration
         if (i + 1) % 10 == 0 or (i + 1) == total_channels:
             progress = ((i + 1) / total_channels) * 100
@@ -42,6 +51,7 @@ def export_data_postgres_team(team_id,team_name):
 
     team_metadata = retrieve_team_metadata(team_id)
 
+    logging.info(f"Compiling zip-Archive")
     zip_bytes = create_zip_archive(download_links, attachment_id_lists, metadata_lists, team_metadata)
     st.download_button(
         label="Download Export of Team as zip",

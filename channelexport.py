@@ -3,6 +3,7 @@ import json
 import re
 import os
 from datetime import datetime
+import logging
 
 import pandas as pd
 import requests
@@ -10,6 +11,13 @@ import streamlit as st
 from database import query_db_postgres
 from filefunctions import string_to_filename, read_database_config, \
     export_to_csv_clean, export_to_json_clean
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Set the logging level you desire (DEBUG, INFO, etc.)
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Include timestamp and level
+    datefmt='%Y-%m-%d %H:%M:%S'  # Format for the timestamp
+)
 
 def export_metadata_json(chan_id):
     query = """
@@ -238,7 +246,7 @@ def export_attachments(file_ids, teams_export, export_dir_name = None):
                 else:
                     with open(final_filename, 'wb') as f:
                         f.write(file_data)
-                    print("Download Complete with " + final_filename)
+                    logging.info(f"Downloaded {final_filename}")
             else:
                 output.append((final_filename,file_data))
 
