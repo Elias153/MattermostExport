@@ -87,10 +87,15 @@ def is_channel_private(chan_id):
 def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_export = False):
     # use to_timestamp for the select criteria as a wrapper for the timestamp if needed for export.
 
+    bot_user_ids = select_bot_user_ids()
+
+    # Create a string with the correct number of %s placeholders separated by commas
+    placeholders = ", ".join(["%s"] * len(bot_user_ids))
+
     # comparisons between dates using sql assume, that if there's not a specific time specified,
     # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison (see last line) has to be adjusted a bit, to not
     # accidentally exclude the last day when something was posted in the channel.
-    query = """
+    query = f"""
     SELECT
         Posts.CreateAt/1000 AS timestamp,
         UserName,
@@ -110,6 +115,7 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
         AND Posts.ChannelId = %s
         AND to_timestamp(Posts.CreateAt/1000) >= %s 
         AND editat = 0 AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' 
+        AND Posts.UserId NOT IN ({placeholders})
     ORDER BY Posts.CreateAt"""
 
     fileidlist = []
@@ -119,7 +125,9 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
     headers = ["Date", "User", "Message", "Type", "Attachments", "Filename"]
     posts.append(headers)
 
-    for row in query_db_postgres(query,(chan_id,earliest_date,latest_date),True):
+    params = (chan_id, earliest_date, latest_date) + tuple(bot_user_ids)
+
+    for row in query_db_postgres(query,params,True):
 
         file_id = row[4]
 
@@ -171,6 +179,17 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
         # fileid-list also exported instead of directly calling "export_attachments" as we need
         # to store the attachments in the correct location of the zip export
         return downloadstring, fileidlist
+
+def select_bot_user_ids():
+    query = """
+    SELECT bots.userid FROM bots
+    """
+
+    bot_ids = []
+    for row in query_db_postgres(query,1,True):
+        bot_ids.append(row[0])
+
+    return bot_ids
 
 def export_attachments(file_ids, teams_export, export_dir_name = None):
     # setup api-connection
