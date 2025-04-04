@@ -31,6 +31,7 @@ def export_metadata_json(chan_id):
     members_dict = {}
     creator_id = ""
     description = ""
+    creator_username = ""
     for row in query_db_postgres(query,chan_id,True):
         username = row[0]
         user_id = row[1]
@@ -44,6 +45,11 @@ def export_metadata_json(chan_id):
             "schemeadmin": scheme_admin
         }
 
+    # find username of creator
+    query = """SELECT Users.username FROM Users WHERE Users.id = %s"""
+    for row in query_db_postgres(query,creator_id,True):
+        creator_username = row[0]
+
     channel_is_private = is_channel_private(chan_id)
 
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -51,6 +57,7 @@ def export_metadata_json(chan_id):
     metadata_dict = {
         "is_private": channel_is_private,
         "channel_id": chan_id,
+        "creator_username": creator_username,
         "creator_id": creator_id,
         "export_date": current_datetime,
         "description": description,
@@ -130,8 +137,11 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
         st.success(
             "Download Complete with " + string_to_filename(chan_name) + ".csv"
         )
+
         # Convert the list to a DataFrame
         df = pd.DataFrame(posts)
+
+        df = df.astype(str)
 
         # function to color the text in the dataframe
         def color_text(val):
