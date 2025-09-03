@@ -97,10 +97,12 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
     # accidentally exclude the last day when something was posted in the channel.
     query = f"""
     SELECT
+        Posts.id,
         Posts.CreateAt/1000 AS timestamp,
         UserName,
         Message,
         Posts.type,
+        Posts.rootid,
         CASE
             WHEN length(Posts.fileids) <= 2 THEN NULL
         ELSE Posts.fileids
@@ -122,15 +124,15 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
     # Fetch rows into lists
     posts = []
 
-    headers = ["Date", "User", "Message", "Type", "Attachments", "Filename"]
+    headers = ["PostID","Date", "User", "Message", "Type","RootID","Attachments", "Filename"]
     posts.append(headers)
 
     params = (chan_id, earliest_date, latest_date) + tuple(bot_user_ids)
 
     for row in query_db_postgres(query,params,True):
 
-        file_id = row[4]
-
+        file_id = row[6]
+ 
         posts.append(row)
         fileidlist.append(file_id)
 
