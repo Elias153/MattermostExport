@@ -26,7 +26,9 @@ def export_metadata_json(chan_id):
         Users.id,
         ChannelMembers.schemeadmin,
         channels.creatorid,
-        channels.purpose 
+        channels.purpose,
+        channels.displayname,
+        channels.type
     FROM 
         ChannelMembers 
         INNER JOIN ChannelMemberHistory ON ChannelMembers.channelid = ChannelMemberHistory.channelid AND ChannelMemberHistory.userid = ChannelMembers.userid 
@@ -40,12 +42,16 @@ def export_metadata_json(chan_id):
     creator_id = ""
     description = ""
     creator_username = ""
+    channel_name = ""
+    channel_type = ""
     for row in query_db_postgres(query,chan_id,True):
         username = row[0]
         user_id = row[1]
         scheme_admin = row[2]
         creator_id = row[3]
         description = row[4]
+        channel_name = row[5]
+        channel_type = row[6]
 
         # Populate the members dictionary
         members_dict[username] = {
@@ -65,6 +71,8 @@ def export_metadata_json(chan_id):
     metadata_dict = {
         "is_private": channel_is_private,
         "channel_id": chan_id,
+        "channel_name": channel_name,
+        "channel_type": channel_type,
         "creator_username": creator_username,
         "creator_id": creator_id,
         "export_date": current_datetime,
