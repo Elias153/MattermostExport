@@ -52,8 +52,11 @@ connection:
   login_id: "<your_username>"
   password: "<your_password>"
 ```
+ps: do not forget the `https://` in front of your URL !
 
 connection.yaml is needed configuration for connection to the mattermost server for subsequent api requests for export of attachments
+
+requirements.txt should also contain `python-magic-bin` (Windows) or `python-magic` (Linux) depending on your OS.
 
 ## Important
 
