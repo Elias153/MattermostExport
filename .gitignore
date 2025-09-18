@@ -3,9 +3,16 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*.csv
+*.xml
+*.pdf
+*.iml
+*.gif
+*.json
+
 # C extensions
 *.so
-
+*.local.xml
 # Distribution / packaging
 .Python
 build/
