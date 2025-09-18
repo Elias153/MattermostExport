@@ -9,7 +9,8 @@ __pycache__/
 *.iml
 *.gif
 *.json
-
+*.jpg
+!img/background.jpg
 # C extensions
 *.so
 *.local.xml
