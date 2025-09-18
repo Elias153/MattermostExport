@@ -9,12 +9,16 @@ def get_channels_from_dmgroup():
     channel_names_from_database = []
     channel_ids_from_database = []
 
-    query = """SELECT Channels.id, Channels.DisplayName FROM Channels WHERE Channels.type = 'D' OR Channels.type = 'G'"""
+    query = """SELECT Channels.id, Channels.DisplayName, Channels.name FROM Channels WHERE Channels.type = 'D' OR Channels.type = 'G'"""
 
     for row in query_db_postgres(query, [], False):
-        ids, name = row
+        ids, name, dm_name = row
         if name == "":
-            name = "Direct Message"
+            # dm's have no displayname
+
+            # get the names of the users from the database todo
+            name = dm_name
+
         channel_names_from_database.append(name)
         channel_ids_from_database.append(ids)
 

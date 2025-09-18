@@ -110,7 +110,7 @@ def export_to_json_clean(data):
 
 def string_to_filename(s):
     # Replace invalid characters with underscores
-    valid_chars = '-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    valid_chars = ',-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     filename = ''.join(c if c in valid_chars else '_' for c in s)
     # Remove leading/trailing spaces and double underscores
     filename = filename.strip().replace('__', '_')

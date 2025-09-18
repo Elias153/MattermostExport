@@ -57,13 +57,33 @@ def channel_name_dropdown_postgres():
     channel_names_from_database = []
     channel_ids_from_database = []
 
-    query = "select Id, DisplayName from Channels"
+    query = "select Id, DisplayName, name from Channels"
 
+    counter = 0
     for row in query_db_postgres(query,[],False):
-        channel_id, channel_name = row  # row returned is tuple ("id", "name"), we split it here
+        channel_id, channel_name, dm_name = row  # row returned is tuple ("id", "name"), we split it here
         if channel_name != "":
             channel_ids_from_database.append(channel_id)  # list with indexes matching those of the names
             channel_names_from_database.append(channel_name)  # list with indexes matching those of the id's
+        else:
+            # limit as you want
+            if counter < 30 or dm_name=='j19nxo1zf7rr5gxgcopceof3ha__oahadhstffrwjpgbwf1w4ks1oc':
+                # we have a dm - since they DO NOT have displaynames.
+                channel_ids_from_database.append(channel_id)
+
+                new_dm_name = ""
+                first_user = True
+                # since the name of the channel is the MATTERMOST IDs of the persons in the dm, query to get real names (they are unique anyways)
+                query = "select username from users inner join channelmembers on users.id = channelmembers.userid inner join channels on channelmembers.channelid = channels.id where channelmembers.channelid = %s and channels.type = 'D'"
+                rows = query_db_postgres(query,channel_id, True)
+                for dm_row in rows:
+                    new_dm_name += dm_row[0]
+                    if first_user and not len(rows) == 1:
+                        new_dm_name += ", "
+                        first_user = False
+                channel_names_from_database.append(new_dm_name)
+
+                counter += 1
 
     # Create a dropdown selection box
     selected_option = st.selectbox(
