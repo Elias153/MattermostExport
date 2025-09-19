@@ -67,7 +67,7 @@ def channel_name_dropdown_postgres():
             channel_names_from_database.append(channel_name)  # list with indexes matching those of the id's
         else:
             # limit as you want
-            if counter < 30 or dm_name=='j19nxo1zf7rr5gxgcopceof3ha__oahadhstffrwjpgbwf1w4ks1oc':
+            if counter < 15 or dm_name=='j19nxo1zf7rr5gxgcopceof3ha__oahadhstffrwjpgbwf1w4ks1oc':
                 # we have a dm - since they DO NOT have displaynames.
                 channel_ids_from_database.append(channel_id)
 
