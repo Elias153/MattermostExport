@@ -12,7 +12,8 @@ def query_db_postgres(query, params, expectedparams):
         # Accessing database information
         config = read_database_config('database.yaml')
 
-        connection = psycopg2.connect(**config['database'])
+        connection = psycopg2.connect(**config['database'], keepalives=1, keepalives_idle=30,
+                            keepalives_interval=10, keepalives_count=3)
 
         # Create a cursor object to execute SQL queries
         cursor = connection.cursor()
