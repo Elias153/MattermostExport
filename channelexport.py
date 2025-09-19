@@ -98,35 +98,43 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
     bot_user_ids = select_bot_user_ids()
 
     # Create a string with the correct number of %s placeholders separated by commas
-    placeholders = ", ".join(["%s"] * len(bot_user_ids))
+    # placeholders = ", ".join(["%s"] * len(bot_user_ids))
 
     # comparisons between dates using sql assume, that if there's not a specific time specified,
     # the time is 00:00:00 ('2025-03-05 00:00:00'), so the comparison (see last line) has to be adjusted a bit, to not
     # accidentally exclude the last day when something was posted in the channel.
-    query = f"""
+    query2 = """
+    WITH file_ids AS (
+      SELECT
+        p.id AS post_id,
+        ord AS idx,
+        file_id
+      FROM Posts p,
+           LATERAL jsonb_array_elements_text(p.fileids::jsonb) WITH ORDINALITY AS t(file_id, ord)
+    )
     SELECT
-        Posts.id,
-        Posts.CreateAt/1000 AS timestamp,
-        UserName,
-        Message,
-        Posts.type,
-        Posts.rootid,
-        CASE
-            WHEN length(Posts.fileids) <= 2 THEN NULL
-        ELSE Posts.fileids
-        END AS fileids,
-        fileinfo.name
-    FROM
-        Posts
-        INNER JOIN Users ON Posts.UserId = Users.Id
-        LEFT JOIN fileinfo ON Posts.id = fileinfo.postid
+      p.id,
+      p.CreateAt/1000 AS timestamp,
+      u.UserName,
+      p.Message,
+      p.type,
+      p.rootid,
+      CASE WHEN p.fileids::text = '[]' THEN NULL ELSE p.fileids END AS fileids,
+      string_agg(f.name, ', ' ORDER BY fi.idx) AS filenames
+    FROM Posts p
+    JOIN Users u         ON u.Id = p.UserId
+    LEFT JOIN file_ids fi  ON fi.post_id = p.id
+    LEFT JOIN fileinfo f   ON f.id = fi.file_id
     WHERE
-        Posts.editat = 0
-        AND Posts.ChannelId = %s
-        AND to_timestamp(Posts.CreateAt/1000) >= %s 
-        AND editat = 0 AND to_timestamp(Posts.CreateAt/1000) < %s + interval '1 day' 
-        AND Posts.UserId NOT IN ({placeholders})
-    ORDER BY Posts.CreateAt"""
+        p.editat = 0
+        AND p.ChannelId = %s
+        AND to_timestamp(p.CreateAt/1000) >= %s 
+        AND to_timestamp(p.CreateAt/1000) < %s + interval '1 day' 
+        AND NOT (p.UserId = ANY(%s))
+    GROUP BY
+        p.id, p.CreateAt, u.UserName, p.Message, p.type, p.rootid, p.fileids
+    ORDER BY p.CreateAt
+    """
 
     fileidlist = []
     # Fetch rows into lists
@@ -135,11 +143,14 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
     headers = ["PostID","Date", "User", "Message", "Type","RootID","Attachments", "Filename"]
     posts.append(headers)
 
-    params = (chan_id, earliest_date, latest_date) + tuple(bot_user_ids)
+    #params = (chan_id, earliest_date, latest_date) + tuple(bot_user_ids)
+    params = (chan_id, earliest_date, latest_date, bot_user_ids)
 
-    for row in query_db_postgres(query,params,True):
+    for row in query_db_postgres(query2,params,True):
 
         file_id = row[6]
+        #if file_id is not None:
+
  
         posts.append(row)
         fileidlist.append(file_id)
