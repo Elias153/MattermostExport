@@ -1,3 +1,4 @@
+import ast
 import csv
 import io
 import json
@@ -115,3 +116,16 @@ def string_to_filename(s):
     # Remove leading/trailing spaces and double underscores
     filename = filename.strip().replace('__', '_')
     return filename
+
+def as_id_list(x):
+    if not x: return []
+    if isinstance(x, (list, tuple)): return list(x)
+    if isinstance(x, str):
+        s = x.strip()
+        for parser in (json.loads, ast.literal_eval):
+            try:
+                y = parser(s); break
+            except Exception:
+                y = s
+        return y if isinstance(y, list) else [y]
+    return [str(x)]

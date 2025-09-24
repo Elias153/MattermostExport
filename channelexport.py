@@ -8,6 +8,8 @@ import logging
 import pandas as pd
 import requests
 import streamlit as st
+
+import filefunctions
 from database import query_db_postgres
 from filefunctions import string_to_filename, read_database_config, \
     export_to_csv_clean, export_to_json_clean
@@ -64,12 +66,16 @@ def export_metadata_json(chan_id):
     for row in query_db_postgres(query,creator_id,True):
         creator_username = row[0]
 
-    channel_is_private = is_channel_private(chan_id)
+    if channel_name == "" and channel_type == 'D':
+        # dm!
+        channel_name = determine_dm_name(chan_id)
+    #channel_is_private = is_channel_private(chan_id)
 
+    # check if channel is dm
     current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     # Create the structured dictionary
     metadata_dict = {
-        "is_private": channel_is_private,
+        #"is_private": channel_is_private,
         "channel_id": chan_id,
         "channel_name": channel_name,
         "channel_type": channel_type,
@@ -83,6 +89,19 @@ def export_metadata_json(chan_id):
     metadata = export_to_json_clean(metadata_dict)
 
     return metadata
+
+def determine_dm_name(chan_id):
+    new_dm_name = ""
+    first_user = True
+    # since the name of the channel is the MATTERMOST IDs of the persons in the dm, query to get real names (they are unique anyways)
+    query = "select username from users inner join channelmembers on users.id = channelmembers.userid inner join channels on channelmembers.channelid = channels.id where channelmembers.channelid = %s and channels.type = 'D'"
+    rows = query_db_postgres(query, chan_id, True)
+    for dm_row in rows:
+        new_dm_name += dm_row[0]
+        if first_user and not len(rows) == 1:
+            new_dm_name += ", "
+            first_user = False
+    return new_dm_name
 
 def is_channel_private(chan_id):
     query = """SELECT publicchannels.displayname FROM publicchannels WHERE publicchannels.id = %s"""
@@ -118,6 +137,7 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
       u.UserName,
       p.Message,
       p.type,
+      p.props,
       p.rootid,
       CASE WHEN p.fileids::text = '[]' THEN NULL ELSE p.fileids END AS fileids,
       string_agg(f.name, ', ' ORDER BY fi.idx) AS filenames
@@ -140,7 +160,7 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
     # Fetch rows into lists
     posts = []
 
-    headers = ["PostID","Date", "User", "Message", "Type","RootID","Attachments", "Filename"]
+    headers = ["PostID","Date", "User", "Message", "Type","Props","RootID","Attachments", "Filename"]
     posts.append(headers)
 
     #params = (chan_id, earliest_date, latest_date) + tuple(bot_user_ids)
@@ -148,12 +168,18 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
 
     for row in query_db_postgres(query2,params,True):
 
-        file_id = row[6]
-        #if file_id is not None:
+        file_id = row[7]
+        if file_id is not None:
+            file_ids_formatted = filefunctions.as_id_list(file_id)
+        else:
+            file_ids_formatted = []
 
+        for file_id2 in file_ids_formatted:
+            fileidlist.append(file_id2)
+
+        logging.info("Detected files : " + str(file_id))
  
         posts.append(row)
-        fileidlist.append(file_id)
 
     if not teams_export :
 
@@ -243,19 +269,19 @@ def export_attachments(file_ids, teams_export, export_dir_name = None):
             # if there is no id for a given message, nothing needs to be done
             pass
         else:
-            ids = str(ids)
+            formatted_id = str(ids)
             # Safely evaluate the string to extract the file ID
             # The IDs are stored in following format: ["myid"], we only need the literal myid
-            try:
-                formatted_id = ast.literal_eval(ids)[0]
-            except ValueError:
+            #try:
+            #    formatted_id = ast.literal_eval(ids)[0]
+            #except ValueError:
                 # Fallback: extract the content between square brackets (e.g. from [myid])
-                match = re.search(r'\[(.*?)\]', ids)
-                if match:
-                    formatted_id = match.group(1).strip().strip('"').strip("'")
-                else:
-                    # Handle the error or skip this entry
-                    continue
+            #    match = re.search(r'\[(.*?)\]', ids)
+            #    if match:
+            #        formatted_id = match.group(1).strip().strip('"').strip("'")
+            #    else:
+            #        # Handle the error or skip this entry
+            #        continue
 
             file_url = url + "/api/v4/files/" + formatted_id
 
