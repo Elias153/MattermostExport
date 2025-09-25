@@ -177,7 +177,7 @@ def export_data_postgres(chan_id, chan_name, earliest_date, latest_date, teams_e
         for file_id2 in file_ids_formatted:
             fileidlist.append(file_id2)
 
-        logging.info("Detected files : " + str(file_id))
+        # logging.info("Detected files : " + str(file_id))
  
         posts.append(row)
 
