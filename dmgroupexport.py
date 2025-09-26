@@ -16,8 +16,18 @@ def get_channels_from_dmgroup():
         if name == "":
             # dm's have no displayname
 
-            # get the names of the users from the database todo
-            name = dm_name
+            new_dm_name = ""
+            first_user = True
+            # since the name of the channel is the MATTERMOST IDs of the persons in the dm, query to get real names (they are unique anyways)
+            query = "select username from users inner join channelmembers on users.id = channelmembers.userid inner join channels on channelmembers.channelid = channels.id where channelmembers.channelid = %s and channels.type = 'D'"
+            rows = query_db_postgres(query, ids, True)
+            for dm_row in rows:
+                new_dm_name += dm_row[0]
+                if first_user and not len(rows) == 1:
+                    new_dm_name += ", "
+                    first_user = False
+
+            name = new_dm_name
 
         channel_names_from_database.append(name)
         channel_ids_from_database.append(ids)
