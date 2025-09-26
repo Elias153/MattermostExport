@@ -4,6 +4,10 @@ _The Streamlit Mattermost Channel Post Exporter_
 > Script has been extended to include export of attachments (and respective filenames) and teams, and include support for postgres instead of mysql.
 > Also now exports metadata such as channelmembers, whether the channel is private/public, and channeladmins in JSON format
 
+# Usage
+
+`streamlit run main.py` in the project directory
+
 ## Introduction
 
 The MM.C.P.E. is a little program that connects to your mattermost database 
