@@ -51,7 +51,7 @@ def export_data_postgres_team(team_id,team_name):
 
     team_metadata = retrieve_team_metadata(team_id)
 
-    logging.info(f"Compiling zip-Archive")
+    logging.info("Compiling zip-Archive")
     zip_bytes = create_zip_archive(download_links, attachment_id_lists, metadata_lists, team_metadata)
     st.download_button(
         label="Download Export of Team as zip",

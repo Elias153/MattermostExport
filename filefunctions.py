@@ -77,6 +77,8 @@ def create_zip_archive(file_tuples, attachment_id_lists, metadata_lists, team_me
             index+=1
 
     mem_zip.seek(0)
+
+    logging.info("Team-Export complete! Preparing \"export as ZIP\" button ...")
     return mem_zip.read()
 
 # reads config from yaml file
